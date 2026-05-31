@@ -1,20 +1,10 @@
-# Build artifacts
 build/
 *.o
 *.elf
-bin/
-iso/
-log/
-
-# Editor / OS
+*.bin
+*.iso
+*.img
+*.map
+*.log
+.cache/
 .vscode/
-.idea/
-.DS_Store
-Thumbs.db
-
-# Python cache
-__pycache__/
-*.pyc
-
-# Temporary files
-*.tmp
