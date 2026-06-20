@@ -1,46 +1,28 @@
-# Threat Model Awal MCSOS 260502 — M0
+nano docs/security/toolchain_threat_model.md# Threat Model Ringkas M1 - Toolchain dan Lingkungan
 
 ## Assets
 
-| Asset | Alasan dilindungi |
-|------|------------------|
-| Source code repository | Menentukan perilaku kernel dan tools |
-| Toolchain | Compiler/linker salah bisa menghasilkan binary salah |
-| Build scripts | Bisa menyisipkan target atau flag berbahaya |
-| Documentation baseline | Menjadi acuan requirement & acceptance |
-| Generated artifacts | Bukti penilaian (log, image, map, dll) |
-| Future signing keys | Belum dibuat di M0 tapi harus direncanakan |
+1. Source code MCSOS.
+2. Script build dan test.
+3. Toolchain compiler, linker, assembler, emulator, debugger.
+4. Artefak generated: object, ELF, log, metadata.
+5. Bukti praktikum dan laporan.
 
----
+## Trust assumptions
 
-## Actors
+1. Paket Ubuntu/Debian berasal dari repository resmi atau mirror kampus yang disetujui.
+2. Mahasiswa tidak mengubah binary compiler/linker secara manual.
+3. Repository berada pada filesystem Linux WSL agar permission dan executable bit stabil.
+4. Build M1 belum mengeksekusi kode guest MCSOS; risiko utama adalah salah konfigurasi dan supply-chain.
 
-| Actor | Capability |
-|------|-----------|
-| Mahasiswa | Mengubah repo dan menjalankan build |
-| Anggota tim | Modify branch & dokumentasi |
-| Dosen/asisten | Review & evaluasi |
-| Dependency eksternal | Supply package/tool |
-| Local process | Bisa merusak file jika permission buruk |
+## Threats
 
----
+| Threat | Dampak | Mitigasi M1 |
+|---|---|---|
+| Compiler host salah target | Object tidak cocok untuk kernel | Inspect `readelf` dan target triple |
+| Linker memakai libc/startup host | Kernel bergantung pada runtime tidak tersedia | Gunakan `-nostdlib`, cek `nm -u` |
+| Repository di `/mnt/c` | permission, symlink, case sensitivity, I/O tidak stabil | Check path pada `check_toolchain.sh` |
+| Generated artifact dikomit | repository kotor dan sulit direproduksi | `.gitignore`, `make distclean` |
+| OVMF tidak tersedia | M2 gagal boot UEFI | `qemu_probe.sh` |
+| Versi tool tidak dicatat | build tidak dapat diaudit | `collect_meta.sh` |
 
-## Trust Boundaries
-
-1. Windows host ↔ WSL environment  
-2. Source code ↔ build output  
-3. Package manager ↔ local toolchain  
-4. Script ↔ shell user  
-5. Future QEMU guest ↔ host system  
-
----
-
-## Initial Threats & Mitigations
-
-| Threat | Impact | Mitigation |
-|--------|--------|------------|
-| Repo di `/mnt/c` | build tidak reproducible | wajib di WSL filesystem |
-| Compiler tanpa target eksplisit | ABI salah | pakai `--target=x86_64-unknown-none` |
-| Script build disisipi command | supply chain attack | review manual + git tracking |
-| Dependency berubah versi | build beda hasil | lock & catat versi toolchain |
-| Artifact tidak diverifikasi | bukti tidak valid | wajib `readelf/objdump/checksum` |
