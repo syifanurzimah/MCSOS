@@ -17,4 +17,16 @@ static inline void io_wait(void) {
     outb(0x80u, 0u);
 }
 
+static inline void cli(void) {
+    __asm__ volatile ("cli" : : : "memory");
+}
+
+static inline void sti(void) {
+    __asm__ volatile ("sti" : : : "memory");
+}
+
+static inline void hlt(void) {
+    __asm__ volatile ("hlt");
+}
+
 #endif

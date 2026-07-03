@@ -1,0 +1,40 @@
+kernel/arch/x86_64/isr.S:.global isr_stub_\vector
+kernel/arch/x86_64/isr.S:.type isr_stub_\vector, @function
+kernel/arch/x86_64/isr.S:isr_stub_\vector:
+kernel/arch/x86_64/isr.S:.size isr_stub_\vector, . - isr_stub_\vector
+kernel/arch/x86_64/isr.S:.global isr_stub_\vector
+kernel/arch/x86_64/isr.S:.type isr_stub_\vector, @function
+kernel/arch/x86_64/isr.S:isr_stub_\vector:
+kernel/arch/x86_64/isr.S:.size isr_stub_\vector, . - isr_stub_\vector
+kernel/arch/x86_64/isr.S:    .quad isr_stub_0
+kernel/arch/x86_64/isr.S:    .quad isr_stub_1
+kernel/arch/x86_64/isr.S:    .quad isr_stub_2
+kernel/arch/x86_64/isr.S:    .quad isr_stub_3
+kernel/arch/x86_64/isr.S:    .quad isr_stub_4
+kernel/arch/x86_64/isr.S:    .quad isr_stub_5
+kernel/arch/x86_64/isr.S:    .quad isr_stub_6
+kernel/arch/x86_64/isr.S:    .quad isr_stub_7
+kernel/arch/x86_64/isr.S:    .quad isr_stub_8
+kernel/arch/x86_64/isr.S:    .quad isr_stub_9
+kernel/arch/x86_64/isr.S:    .quad isr_stub_10
+kernel/arch/x86_64/isr.S:    .quad isr_stub_11
+kernel/arch/x86_64/isr.S:    .quad isr_stub_12
+kernel/arch/x86_64/isr.S:    .quad isr_stub_13
+kernel/arch/x86_64/isr.S:    .quad isr_stub_14
+kernel/arch/x86_64/isr.S:    .quad isr_stub_15
+kernel/arch/x86_64/isr.S:    .quad isr_stub_16
+kernel/arch/x86_64/isr.S:    .quad isr_stub_17
+kernel/arch/x86_64/isr.S:    .quad isr_stub_18
+kernel/arch/x86_64/isr.S:    .quad isr_stub_19
+kernel/arch/x86_64/isr.S:    .quad isr_stub_20
+kernel/arch/x86_64/isr.S:    .quad isr_stub_21
+kernel/arch/x86_64/isr.S:    .quad isr_stub_22
+kernel/arch/x86_64/isr.S:    .quad isr_stub_23
+kernel/arch/x86_64/isr.S:    .quad isr_stub_24
+kernel/arch/x86_64/isr.S:    .quad isr_stub_25
+kernel/arch/x86_64/isr.S:    .quad isr_stub_26
+kernel/arch/x86_64/isr.S:    .quad isr_stub_27
+kernel/arch/x86_64/isr.S:    .quad isr_stub_28
+kernel/arch/x86_64/isr.S:    .quad isr_stub_29
+kernel/arch/x86_64/isr.S:    .quad isr_stub_30
+kernel/arch/x86_64/isr.S:    .quad isr_stub_31

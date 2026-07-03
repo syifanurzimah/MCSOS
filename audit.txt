@@ -1,0 +1,18 @@
+readelf -h build/kernel.elf > build/kernel.readelf.header.txt
+readelf -l build/kernel.elf > build/kernel.readelf.programs.txt
+nm -n build/kernel.elf > build/kernel.syms.txt
+objdump -d -Mintel build/kernel.elf > build/kernel.disasm.txt
+grep -q 'ELF64' build/kernel.readelf.header.txt
+grep -q 'Machine:[[:space:]]*Advanced Micro Devices X86-64' build/kernel.readelf.header.txt
+grep -q 'kmain' build/kernel.syms.txt
+grep -q 'x86_64_idt_init' build/kernel.syms.txt
+grep -q 'x86_64_trap_dispatch' build/kernel.syms.txt
+grep -q 'iretq' build/kernel.disasm.txt
+grep -q 'lidt' build/kernel.disasm.txt
+! nm -u build/kernel.elf | grep .
+! nm -u build/kernel.breakpoint.elf | grep .
+! nm -u build/kernel.panic.elf | grep .
+grep -q 'isr_stub_14' build/kernel.syms.txt
+grep -q 'x86_64_exception_stubs' build/kernel.syms.txt
+readelf -S build/kernel.elf | grep -q '.text'
+readelf -S build/kernel.elf | grep -q '.rodata'
