@@ -1,0 +1,780 @@
+syifa@WIN-E2QNIIEGDH4:~$ cd ~/src/mcsos
+syifa@WIN-E2QNIIEGDH4:~/src/mcsos$ pwd
+/home/syifa/src/mcsos
+syifa@WIN-E2QNIIEGDH4:~/src/mcsos$ cat scripts/grade_m7.sh
+#!/usr/bin/env bash
+set -euo pipefail
+
+mkdir -p build/evidence
+
+make clean >/dev/null 2>&1 || true
+make check-m7 2>&1 | tee build/evidence/m7_make_check.log
+
+readelf -h build/vmm.o > build/evidence/m7_vmm_readelf_header.txt
+readelf -S build/vmm.o > build/evidence/m7_vmm_readelf_sections.txt
+nm -u build/vmm.o > build/evidence/m7_vmm_nm_undefined.txt
+objdump -dr build/vmm.o > build/evidence/m7_vmm_objdump.txt
+
+if [ -s build/evidence/m7_vmm_nm_undefined.txt ]; then
+    echo "[FAIL] unresolved symbol ditemukan pada build/vmm.o" >&2
+    exit 1
+fi
+
+grep -q "invlpg" build/evidence/m7_vmm_objdump.txt
+grep -q "cr3" build/evidence/m7_vmm_objdump.txt
+
+echo "[PASS] static grade M7 selesai"
+syifa@WIN-E2QNIIEGDH4:~/src/mcsos$ ./scripts/grade_m7.sh
+build/evidence/m7_make_check.log: No such file or directory (os error 2)
+mkdir -p build
+clang -std=c17 -Wall -Wextra -Werror -Ikernel/include -Ikernel/include/mcsos -DMCSOS_HOST_TEST -c kernel/core/vmm.c -o build/vmm.o
+mkdir -p build
+clang -std=c17 -Wall -Wextra -Werror -Ikernel/include -Ikernel/include/mcsos -DMCSOS_HOST_TEST kernel/core/vmm.c tests/test_vmm_host.c -o build/test_vmm_host
+./build/test_vmm_host
+M7 VMM host tests PASS
+nm -u build/vmm.o
+objdump -dr build/vmm.o > build/vmm.objdump.txt
+grep -q "cr3" build/vmm.objdump.txt
+syifa@WIN-E2QNIIEGDH4:~/src/mcsos$ ./scripts/grade_m7.sh
+build/evidence/m7_make_check.log: No such file or directory (os error 2)
+mkdir -p build
+clang -std=c17 -Wall -Wextra -Werror -Ikernel/include -Ikernel/include/mcsos -DMCSOS_HOST_TEST -c kernel/core/vmm.c -o build/vmm.o
+mkdir -p build
+clang -std=c17 -Wall -Wextra -Werror -Ikernel/include -Ikernel/include/mcsos -DMCSOS_HOST_TEST kernel/core/vmm.c tests/test_vmm_host.c -o build/test_vmm_host
+./build/test_vmm_host
+M7 VMM host tests PASS
+nm -u build/vmm.o
+objdump -dr build/vmm.o > build/vmm.objdump.txt
+grep -q "cr3" build/vmm.objdump.txt
+syifa@WIN-E2QNIIEGDH4:~/src/mcsos$ nano scripts/grade_m7.sh
+syifa@WIN-E2QNIIEGDH4:~/src/mcsos$ chmod +x scripts/grade_m7.sh
+/scripts/grade_m7.shsyifa@WIN-E2QNIIEGDH4:~/src/mcsos$ ./scripts/grade_m7.sh
+mkdir -p build
+clang -std=c17 -Wall -Wextra -Werror -Ikernel/include -Ikernel/include/mcsos -DMCSOS_HOST_TEST -c kernel/core/vmm.c -o build/vmm.o
+mkdir -p build
+clang -std=c17 -Wall -Wextra -Werror -Ikernel/include -Ikernel/include/mcsos -DMCSOS_HOST_TEST kernel/core/vmm.c tests/test_vmm_host.c -o build/test_vmm_host
+./build/test_vmm_host
+M7 VMM host tests PASS
+nm -u build/vmm.o
+objdump -dr build/vmm.o > build/vmm.objdump.txt
+grep -q "cr3" build/vmm.objdump.txt
+syifa@WIN-E2QNIIEGDH4:~/src/mcsos$ cat scripts/grade_m7.sh
+#!/usr/bin/env bash
+set -euo pipefail
+
+make clean >/dev/null 2>&1 || true
+
+mkdir -p build/evidence
+
+make check-m7 2>&1 | tee build/evidence/m7_make_check.log
+
+readelf -h build/vmm.o > build/evidence/m7_vmm_readelf_header.txt
+readelf -S build/vmm.o > build/evidence/m7_vmm_readelf_sections.txt
+nm -u build/vmm.o > build/evidence/m7_vmm_nm_undefined.txt
+objdump -dr build/vmm.o > build/evidence/m7_vmm_objdump.txt
+
+if [ -s build/evidence/m7_vmm_nm_undefined.txt ]; then
+    echo "[FAIL] unresolved symbol ditemukan pada build/vmm.o" >&2
+    exit 1
+fi
+
+grep -q "invlpg" build/evidence/m7_vmm_objdump.txt
+grep -q "cr3" build/evidence/m7_vmm_objdump.txt
+
+echo "[PASS] static grade M7 selesai"
+syifa@WIN-E2QNIIEGDH4:~/src/mcsos$ grep -n "invlpg" build/evidence/m7_vmm_objdump.txt
+syifa@WIN-E2QNIIEGDH4:~/src/mcsos$ grep -n "vmm_invalidate_page" -A10 build/evidence/m7_vmm_objdump.txt
+681:                    999: R_X86_64_PLT32     vmm_invalidate_page-0x4
+682- 99d:       c7 45 fc 00 00 00 00    movl   $0x0,-0x4(%rbp)
+683- 9a4:       8b 45 fc                mov    -0x4(%rbp),%eax
+684- 9a7:       48 83 c4 60             add    $0x60,%rsp
+685- 9ab:       5d                      pop    %rbp
+686- 9ac:       c3                      ret
+687- 9ad:       0f 1f 00                nopl   (%rax)
+688-
+689:00000000000009b0 <vmm_invalidate_page>:
+690- 9b0:       55                      push   %rbp
+691- 9b1:       48 89 e5                mov    %rsp,%rbp
+692- 9b4:       48 89 7d f8             mov    %rdi,-0x8(%rbp)
+693- 9b8:       5d                      pop    %rbp
+694- 9b9:       c3                      ret
+695- 9ba:       66 0f 1f 44 00 00       nopw   0x0(%rax,%rax,1)
+696-
+697-00000000000009c0 <vmm_read_cr3>:
+698- 9c0:       55                      push   %rbp
+699- 9c1:       48 89 e5                mov    %rsp,%rbp
+syifa@WIN-E2QNIIEGDH4:~/src/mcsos$ tail -40 kernel/core/vmm.c
+    if ((e & VMM_PTE_PRESENT) == 0 || (e & VMM_PTE_HUGE) != 0) { return VMM_ERR_NOT_FOUND; }
+    uint64_t *pt = table_from_phys(space, e & VMM_PTE_ADDR_MASK);
+    if (pt == 0) { return VMM_ERR_INVAL; }
+    unsigned pti = idx_pt(vaddr);
+    if ((pt[pti] & VMM_PTE_PRESENT) == 0) { return VMM_ERR_NOT_FOUND; }
+    pt[pti] = 0;
+    vmm_invalidate_page(vaddr);
+    return VMM_MAP_OK;
+}
+
+#if defined(__x86_64__) && !defined(MCSOS_HOST_TEST)
+void vmm_invalidate_page(uint64_t vaddr) {
+    __asm__ volatile("invlpg (%0)" :: "r"((void *)vaddr) : "memory");
+}
+
+uint64_t vmm_read_cr3(void) {
+    uint64_t value;
+    asm volatile("mov %%cr3, %0" : "=r"(value) ::: "memory");
+    g_cr3_sink = value;
+    return value;
+}
+
+uint64_t vmm_read_cr3(void) {
+    uint64_t value;
+    asm volatile("mov %%cr3, %0" : "=r"(value) ::: "memory");
+    g_cr3_sink = value;
+}
+
+uint64_t vmm_read_cr2(void) {
+    uint64_t value;
+    __asm__ volatile("mov %%cr2, %0" : "=r"(value) :: "memory");
+    return value;
+}
+#else
+void vmm_invalidate_page(uint64_t vaddr) { (void)vaddr; }
+uint64_t vmm_read_cr3(void) { return 0; }
+void vmm_write_cr3(uint64_t value) { (void)value; }
+uint64_t vmm_read_cr2(void) { return 0; }
+#endif
+
+syifa@WIN-E2QNIIEGDH4:~/src/mcsos$ grep -n "#if defined(__x86_64__)" -A30 kernel/core/vmm.c
+163:#if defined(__x86_64__) && !defined(MCSOS_HOST_TEST)
+164-void vmm_invalidate_page(uint64_t vaddr) {
+165-    __asm__ volatile("invlpg (%0)" :: "r"((void *)vaddr) : "memory");
+166-}
+167-
+168-uint64_t vmm_read_cr3(void) {
+169-    uint64_t value;
+170-    asm volatile("mov %%cr3, %0" : "=r"(value) ::: "memory");
+171-    g_cr3_sink = value;
+172-    return value;
+173-}
+174-
+175-uint64_t vmm_read_cr3(void) {
+176-    uint64_t value;
+177-    asm volatile("mov %%cr3, %0" : "=r"(value) ::: "memory");
+178-    g_cr3_sink = value;
+179-}
+180-
+181-uint64_t vmm_read_cr2(void) {
+182-    uint64_t value;
+183-    __asm__ volatile("mov %%cr2, %0" : "=r"(value) :: "memory");
+184-    return value;
+185-}
+186-#else
+187-void vmm_invalidate_page(uint64_t vaddr) { (void)vaddr; }
+188-uint64_t vmm_read_cr3(void) { return 0; }
+189-void vmm_write_cr3(uint64_t value) { (void)value; }
+190-uint64_t vmm_read_cr2(void) { return 0; }
+191-#endif
+192-
+syifa@WIN-E2QNIIEGDH4:~/src/mcsos$ nano kernel/core/vmm.c
+syifa@WIN-E2QNIIEGDH4:~/src/mcsos$ make clean
+ipts/grade_m7.shrm -rf build
+syifa@WIN-E2QNIIEGDH4:~/src/mcsos$ ./scripts/grade_m7.sh
+mkdir -p build
+clang -std=c17 -Wall -Wextra -Werror -Ikernel/include -Ikernel/include/mcsos -DMCSOS_HOST_TEST -c kernel/core/vmm.c -o build/vmm.o
+mkdir -p build
+clang -std=c17 -Wall -Wextra -Werror -Ikernel/include -Ikernel/include/mcsos -DMCSOS_HOST_TEST kernel/core/vmm.c tests/test_vmm_host.c -o build/test_vmm_host
+./build/test_vmm_host
+M7 VMM host tests PASS
+nm -u build/vmm.o
+objdump -dr build/vmm.o > build/vmm.objdump.txt
+grep -q "cr3" build/vmm.objdump.txt
+syifa@WIN-E2QNIIEGDH4:~/src/mcsos$ grep -n "invlpg" build/evidence/m7_vmm_objdump.txt
+syifa@WIN-E2QNIIEGDH4:~/src/mcsos$ grep -n "cr3" build/evidence/m7_vmm_objdump.txt
+697:00000000000009c0 <vmm_read_cr3>:
+706:00000000000009d0 <vmm_write_cr3>:
+syifa@WIN-E2QNIIEGDH4:~/src/mcsos$ nano kernel/core/vmm.c
+syifa@WIN-E2QNIIEGDH4:~/src/mcsos$ grep -n "vmm_invalidate_page(" kernel/core/vmm.c159:    vmm_invalidate_page(vaddr);
+165:void vmm_invalidate_page(uint64_t vaddr)
+191:void vmm_invalidate_page(uint64_t vaddr) { (void)vaddr; }
+syifa@WIN-E2QNIIEGDH4:~/src/mcsos$ sed -n '160,195p' kernel/core/vmm.c
+    return VMM_MAP_OK;
+}
+
+#if defined(__x86_64__) && !defined(MCSOS_HOST_TEST)
+
+void vmm_invalidate_page(uint64_t vaddr)
+{
+    asm volatile("invlpg (%0)" :: "r"((void *)vaddr) : "memory");
+}
+
+uint64_t vmm_read_cr3(void) {
+    uint64_t value;
+    __asm__ volatile("mov %%cr3, %0"
+                     : "=r"(value)
+                     :
+                     : "memory");
+    g_cr3_sink = value;
+    return value;
+}
+
+uint64_t vmm_read_cr2(void) {
+    uint64_t value;
+    __asm__ volatile("mov %%cr2, %0"
+                     : "=r"(value)
+                     :
+                     : "memory");
+    return value;
+}
+
+#else
+
+void vmm_invalidate_page(uint64_t vaddr) { (void)vaddr; }
+uint64_t vmm_read_cr3(void) { return 0; }
+void vmm_write_cr3(uint64_t value) { (void)value; }
+uint64_t vmm_read_cr2(void) { return 0; }
+
+syifa@WIN-E2QNIIEGDH4:~/src/mcsos$ grep -A15 "^check-m7" Makefile
+check-m7: build/vmm.o build/test_vmm_host
+>./build/test_vmm_host
+>$(NM) -u build/vmm.o
+>$(OBJDUMP) -dr build/vmm.o > build/vmm.objdump.txt
+>grep -q "cr3" build/vmm.objdump.txt
+
+clean:
+>rm -rf $(BUILD_DIR)
+
+distclean: clean
+>rm -rf iso_root limine evidence
+syifa@WIN-E2QNIIEGDH4:~/src/mcsos$ grep -n "vmm_write_cr3" kernel/core/vmm.c
+193:void vmm_write_cr3(uint64_t value) { (void)value; }
+syifa@WIN-E2QNIIEGDH4:~/src/mcsos$ nano kernel/core/vmm.c
+syifa@WIN-E2QNIIEGDH4:~/src/mcsos$ grep -n "vmm_write_cr3" -A8 -B2 kernel/core/vmm.c
+178-}
+179-
+180: void vmm_write_cr3(uint64_t value)
+181-{
+182-    __asm__ volatile("mov %0, %%cr3"
+183-                     :
+184-                     : "r"(value)
+185-                     : "memory");
+186-    g_cr3_sink = value;
+187-}
+188-
+--
+200-void vmm_invalidate_page(uint64_t vaddr) { (void)vaddr; }
+201-uint64_t vmm_read_cr3(void) { return 0; }
+202:void vmm_write_cr3(uint64_t value) { (void)value; }
+203-uint64_t vmm_read_cr2(void) { return 0; }
+204-
+205-#endif
+syifa@WIN-E2QNIIEGDH4:~/src/mcsos$ make
+ build/normal/kernel/core/vmm.o | grep -n "invlpg"mkdir -p build/normal/kernel/arch/x86_64/
+clang --target=x86_64-unknown-none-elf -std=c17 -ffreestanding -fno-builtin -fno-stack-protector -fno-stack-check -fno-pic -fno-pie -fno-lto -m64 -march=x86-64 -mabi=sysv -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -mcmodel=kernel -Wall -Wextra -Werror -Ikernel/arch/x86_64/include -Ikernel/include -c kernel/arch/x86_64/idt.c -o build/normal/kernel/arch/x86_64/idt.o
+mkdir -p build/normal/kernel/core/
+clang --target=x86_64-unknown-none-elf -std=c17 -ffreestanding -fno-builtin -fno-stack-protector -fno-stack-check -fno-pic -fno-pie -fno-lto -m64 -march=x86-64 -mabi=sysv -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -mcmodel=kernel -Wall -Wextra -Werror -Ikernel/arch/x86_64/include -Ikernel/include -c kernel/core/kmain.c -o build/normal/kernel/core/kmain.o
+mkdir -p build/normal/kernel/core/
+clang --target=x86_64-unknown-none-elf -std=c17 -ffreestanding -fno-builtin -fno-stack-protector -fno-stack-check -fno-pic -fno-pie -fno-lto -m64 -march=x86-64 -mabi=sysv -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -mcmodel=kernel -Wall -Wextra -Werror -Ikernel/arch/x86_64/include -Ikernel/include -c kernel/core/log.c -o build/normal/kernel/core/log.o
+mkdir -p build/normal/kernel/core/
+clang --target=x86_64-unknown-none-elf -std=c17 -ffreestanding -fno-builtin -fno-stack-protector -fno-stack-check -fno-pic -fno-pie -fno-lto -m64 -march=x86-64 -mabi=sysv -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -mcmodel=kernel -Wall -Wextra -Werror -Ikernel/arch/x86_64/include -Ikernel/include -c kernel/core/panic.c -o build/normal/kernel/core/panic.o
+mkdir -p build/normal/kernel/core/
+clang --target=x86_64-unknown-none-elf -std=c17 -ffreestanding -fno-builtin -fno-stack-protector -fno-stack-check -fno-pic -fno-pie -fno-lto -m64 -march=x86-64 -mabi=sysv -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -mcmodel=kernel -Wall -Wextra -Werror -Ikernel/arch/x86_64/include -Ikernel/include -c kernel/core/pic.c -o build/normal/kernel/core/pic.o
+mkdir -p build/normal/kernel/core/
+clang --target=x86_64-unknown-none-elf -std=c17 -ffreestanding -fno-builtin -fno-stack-protector -fno-stack-check -fno-pic -fno-pie -fno-lto -m64 -march=x86-64 -mabi=sysv -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -mcmodel=kernel -Wall -Wextra -Werror -Ikernel/arch/x86_64/include -Ikernel/include -c kernel/core/pit.c -o build/normal/kernel/core/pit.o
+mkdir -p build/normal/kernel/core/
+clang --target=x86_64-unknown-none-elf -std=c17 -ffreestanding -fno-builtin -fno-stack-protector -fno-stack-check -fno-pic -fno-pie -fno-lto -m64 -march=x86-64 -mabi=sysv -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -mcmodel=kernel -Wall -Wextra -Werror -Ikernel/arch/x86_64/include -Ikernel/include -c kernel/core/pmm.c -o build/normal/kernel/core/pmm.o
+mkdir -p build/normal/kernel/core/
+clang --target=x86_64-unknown-none-elf -std=c17 -ffreestanding -fno-builtin -fno-stack-protector -fno-stack-check -fno-pic -fno-pie -fno-lto -m64 -march=x86-64 -mabi=sysv -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -mcmodel=kernel -Wall -Wextra -Werror -Ikernel/arch/x86_64/include -Ikernel/include -c kernel/core/serial.c -o build/normal/kernel/core/serial.o
+mkdir -p build/normal/kernel/core/
+clang --target=x86_64-unknown-none-elf -std=c17 -ffreestanding -fno-builtin -fno-stack-protector -fno-stack-check -fno-pic -fno-pie -fno-lto -m64 -march=x86-64 -mabi=sysv -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -mcmodel=kernel -Wall -Wextra -Werror -Ikernel/arch/x86_64/include -Ikernel/include -c kernel/core/trap.c -o build/normal/kernel/core/trap.o
+mkdir -p build/normal/kernel/core/
+clang --target=x86_64-unknown-none-elf -std=c17 -ffreestanding -fno-builtin -fno-stack-protector -fno-stack-check -fno-pic -fno-pie -fno-lto -m64 -march=x86-64 -mabi=sysv -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -mcmodel=kernel -Wall -Wextra -Werror -Ikernel/arch/x86_64/include -Ikernel/include -c kernel/core/vmm.c -o build/normal/kernel/core/vmm.o
+kernel/core/vmm.c:167:5: error: use of undeclared identifier
+      'asm'
+  167 |     asm volatile("invlpg (%0)" :: "r"((void *)vaddr) : "memory");
+      |     ^~~
+kernel/core/vmm.c:165:35: error: unused parameter 'vaddr'
+      [-Werror,-Wunused-parameter]
+  165 | void vmm_invalidate_page(uint64_t vaddr)
+      |                                   ^
+2 errors generated.
+make: *** [Makefile:57: build/normal/kernel/core/vmm.o] Error 1
+syifa@WIN-E2QNIIEGDH4:~/src/mcsos$ objdump -dr build/normal/kernel/core/vmm.o | grep -n "invlpg"
+objdump: 'build/normal/kernel/core/vmm.o': No such file
+syifa@WIN-E2QNIIEGDH4:~/src/mcsos$ make
+mkdir -p build/normal/kernel/core/
+clang --target=x86_64-unknown-none-elf -std=c17 -ffreestanding -fno-builtin -fno-stack-protector -fno-stack-check -fno-pic -fno-pie -fno-lto -m64 -march=x86-64 -mabi=sysv -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -mcmodel=kernel -Wall -Wextra -Werror -Ikernel/arch/x86_64/include -Ikernel/include -c kernel/core/vmm.c -o build/normal/kernel/core/vmm.o
+kernel/core/vmm.c:167:5: error: use of undeclared identifier
+      'asm'
+  167 |     asm volatile("invlpg (%0)" :: "r"((void *)vaddr) : "memory");
+      |     ^~~
+kernel/core/vmm.c:165:35: error: unused parameter 'vaddr'
+      [-Werror,-Wunused-parameter]
+  165 | void vmm_invalidate_page(uint64_t vaddr)
+      |                                   ^
+2 errors generated.
+make: *** [Makefile:57: build/normal/kernel/core/vmm.o] Error 1
+syifa@WIN-E2QNIIEGDH4:~/src/mcsos$ ls build/normal/kernel/core/
+kmain.o  log.o  panic.o  pic.o  pit.o  pmm.o  serial.o  trap.o
+syifa@WIN-E2QNIIEGDH4:~/src/mcsos$ nano kernel/core/vmm.c
+syifa@WIN-E2QNIIEGDH4:~/src/mcsos$ make
+mkdir -p build/normal/kernel/core/
+clang --target=x86_64-unknown-none-elf -std=c17 -ffreestanding -fno-builtin -fno-stack-protector -fno-stack-check -fno-pic -fno-pie -fno-lto -m64 -march=x86-64 -mabi=sysv -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -mcmodel=kernel -Wall -Wextra -Werror -Ikernel/arch/x86_64/include -Ikernel/include -c kernel/core/vmm.c -o build/normal/kernel/core/vmm.o
+mkdir -p build/normal/kernel/lib/
+clang --target=x86_64-unknown-none-elf -std=c17 -ffreestanding -fno-builtin -fno-stack-protector -fno-stack-check -fno-pic -fno-pie -fno-lto -m64 -march=x86-64 -mabi=sysv -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -mcmodel=kernel -Wall -Wextra -Werror -Ikernel/arch/x86_64/include -Ikernel/include -c kernel/lib/memory.c -o build/normal/kernel/lib/memory.o
+mkdir -p build/normal/kernel/arch/x86_64/
+clang --target=x86_64-unknown-none-elf -ffreestanding -fno-pic -fno-pie -m64 -mno-red-zone -Wall -Wextra -Werror -Ikernel/arch/x86_64/include -Ikernel/include -c kernel/arch/x86_64/isr.S -o build/normal/kernel/arch/x86_64/isr.o
+mkdir -p build
+ld.lld -nostdlib -static -z max-page-size=0x1000 -T linker.ld -Map=build/kernel.map -o build/kernel.elf build/normal/kernel/arch/x86_64/idt.o build/normal/kernel/core/kmain.o build/normal/kernel/core/log.o build/normal/kernel/core/panic.o build/normal/kernel/core/pic.o build/normal/kernel/core/pit.o build/normal/kernel/core/pmm.o build/normal/kernel/core/serial.o build/normal/kernel/core/trap.o build/normal/kernel/core/vmm.o build/normal/kernel/lib/memory.o build/normal/kernel/arch/x86_64/isr.o
+readelf -h build/kernel.elf > build/kernel.readelf.header.txt
+readelf -l build/kernel.elf > build/kernel.readelf.programs.txt
+nm -n build/kernel.elf > build/kernel.syms.txt
+objdump -d -Mintel build/kernel.elf > build/kernel.disasm.txt
+grep -q 'ELF64' build/kernel.readelf.header.txt
+grep -q 'Machine:[[:space:]]*Advanced Micro Devices X86-64' build/kernel.readelf.header.txt
+grep -q 'kmain' build/kernel.syms.txt
+grep -q 'x86_64_idt_init' build/kernel.syms.txt
+grep -q 'x86_64_trap_dispatch' build/kernel.syms.txt
+grep -q 'iretq' build/kernel.disasm.txt
+grep -q 'lidt' build/kernel.disasm.txt
+syifa@WIN-E2QNIIEGDH4:~/src/mcsos$ objdump -dr build/normal/kernel/core/vmm.o | grep -n "invlpg"
+704: 9cd:       0f 01 38                invlpg (%rax)
+syifa@WIN-E2QNIIEGDH4:~/src/mcsos$ nano scripts/grade_m7.sh
+syifa@WIN-E2QNIIEGDH4:~/src/mcsos$ ./scripts/grade_m7.sh
+mkdir -p build
+clang -std=c17 -Wall -Wextra -Werror -Ikernel/include -Ikernel/include/mcsos -DMCSOS_HOST_TEST -c kernel/core/vmm.c -o build/vmm.o
+mkdir -p build
+clang -std=c17 -Wall -Wextra -Werror -Ikernel/include -Ikernel/include/mcsos -DMCSOS_HOST_TEST kernel/core/vmm.c tests/test_vmm_host.c -o build/test_vmm_host
+./build/test_vmm_host
+M7 VMM host tests PASS
+nm -u build/vmm.o
+objdump -dr build/vmm.o > build/vmm.objdump.txt
+grep -q "cr3" build/vmm.objdump.txt
+objdump: 'build/normal/kernel/core/vmm.o': No such file
+syifa@WIN-E2QNIIEGDH4:~/src/mcsos$ nano scripts/grade_m7.sh
+syifa@WIN-E2QNIIEGDH4:~/src/mcsos$ ./scripts/grade_m7.sh
+mkdir -p build/normal/kernel/arch/x86_64/
+clang --target=x86_64-unknown-none-elf -std=c17 -ffreestanding -fno-builtin -fno-stack-protector -fno-stack-check -fno-pic -fno-pie -fno-lto -m64 -march=x86-64 -mabi=sysv -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -mcmodel=kernel -Wall -Wextra -Werror -Ikernel/arch/x86_64/include -Ikernel/include -c kernel/arch/x86_64/idt.c -o build/normal/kernel/arch/x86_64/idt.o
+mkdir -p build/normal/kernel/core/
+clang --target=x86_64-unknown-none-elf -std=c17 -ffreestanding -fno-builtin -fno-stack-protector -fno-stack-check -fno-pic -fno-pie -fno-lto -m64 -march=x86-64 -mabi=sysv -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -mcmodel=kernel -Wall -Wextra -Werror -Ikernel/arch/x86_64/include -Ikernel/include -c kernel/core/kmain.c -o build/normal/kernel/core/kmain.o
+mkdir -p build/normal/kernel/core/
+clang --target=x86_64-unknown-none-elf -std=c17 -ffreestanding -fno-builtin -fno-stack-protector -fno-stack-check -fno-pic -fno-pie -fno-lto -m64 -march=x86-64 -mabi=sysv -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -mcmodel=kernel -Wall -Wextra -Werror -Ikernel/arch/x86_64/include -Ikernel/include -c kernel/core/log.c -o build/normal/kernel/core/log.o
+mkdir -p build/normal/kernel/core/
+clang --target=x86_64-unknown-none-elf -std=c17 -ffreestanding -fno-builtin -fno-stack-protector -fno-stack-check -fno-pic -fno-pie -fno-lto -m64 -march=x86-64 -mabi=sysv -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -mcmodel=kernel -Wall -Wextra -Werror -Ikernel/arch/x86_64/include -Ikernel/include -c kernel/core/panic.c -o build/normal/kernel/core/panic.o
+mkdir -p build/normal/kernel/core/
+clang --target=x86_64-unknown-none-elf -std=c17 -ffreestanding -fno-builtin -fno-stack-protector -fno-stack-check -fno-pic -fno-pie -fno-lto -m64 -march=x86-64 -mabi=sysv -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -mcmodel=kernel -Wall -Wextra -Werror -Ikernel/arch/x86_64/include -Ikernel/include -c kernel/core/pic.c -o build/normal/kernel/core/pic.o
+mkdir -p build/normal/kernel/core/
+clang --target=x86_64-unknown-none-elf -std=c17 -ffreestanding -fno-builtin -fno-stack-protector -fno-stack-check -fno-pic -fno-pie -fno-lto -m64 -march=x86-64 -mabi=sysv -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -mcmodel=kernel -Wall -Wextra -Werror -Ikernel/arch/x86_64/include -Ikernel/include -c kernel/core/pit.c -o build/normal/kernel/core/pit.o
+mkdir -p build/normal/kernel/core/
+clang --target=x86_64-unknown-none-elf -std=c17 -ffreestanding -fno-builtin -fno-stack-protector -fno-stack-check -fno-pic -fno-pie -fno-lto -m64 -march=x86-64 -mabi=sysv -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -mcmodel=kernel -Wall -Wextra -Werror -Ikernel/arch/x86_64/include -Ikernel/include -c kernel/core/pmm.c -o build/normal/kernel/core/pmm.o
+mkdir -p build/normal/kernel/core/
+clang --target=x86_64-unknown-none-elf -std=c17 -ffreestanding -fno-builtin -fno-stack-protector -fno-stack-check -fno-pic -fno-pie -fno-lto -m64 -march=x86-64 -mabi=sysv -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -mcmodel=kernel -Wall -Wextra -Werror -Ikernel/arch/x86_64/include -Ikernel/include -c kernel/core/serial.c -o build/normal/kernel/core/serial.o
+mkdir -p build/normal/kernel/core/
+clang --target=x86_64-unknown-none-elf -std=c17 -ffreestanding -fno-builtin -fno-stack-protector -fno-stack-check -fno-pic -fno-pie -fno-lto -m64 -march=x86-64 -mabi=sysv -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -mcmodel=kernel -Wall -Wextra -Werror -Ikernel/arch/x86_64/include -Ikernel/include -c kernel/core/trap.c -o build/normal/kernel/core/trap.o
+mkdir -p build/normal/kernel/core/
+clang --target=x86_64-unknown-none-elf -std=c17 -ffreestanding -fno-builtin -fno-stack-protector -fno-stack-check -fno-pic -fno-pie -fno-lto -m64 -march=x86-64 -mabi=sysv -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -mcmodel=kernel -Wall -Wextra -Werror -Ikernel/arch/x86_64/include -Ikernel/include -c kernel/core/vmm.c -o build/normal/kernel/core/vmm.o
+mkdir -p build/normal/kernel/lib/
+clang --target=x86_64-unknown-none-elf -std=c17 -ffreestanding -fno-builtin -fno-stack-protector -fno-stack-check -fno-pic -fno-pie -fno-lto -m64 -march=x86-64 -mabi=sysv -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -mcmodel=kernel -Wall -Wextra -Werror -Ikernel/arch/x86_64/include -Ikernel/include -c kernel/lib/memory.c -o build/normal/kernel/lib/memory.o
+mkdir -p build/normal/kernel/arch/x86_64/
+clang --target=x86_64-unknown-none-elf -ffreestanding -fno-pic -fno-pie -m64 -mno-red-zone -Wall -Wextra -Werror -Ikernel/arch/x86_64/include -Ikernel/include -c kernel/arch/x86_64/isr.S -o build/normal/kernel/arch/x86_64/isr.o
+mkdir -p build
+ld.lld -nostdlib -static -z max-page-size=0x1000 -T linker.ld -Map=build/kernel.map -o build/kernel.elf build/normal/kernel/arch/x86_64/idt.o build/normal/kernel/core/kmain.o build/normal/kernel/core/log.o build/normal/kernel/core/panic.o build/normal/kernel/core/pic.o build/normal/kernel/core/pit.o build/normal/kernel/core/pmm.o build/normal/kernel/core/serial.o build/normal/kernel/core/trap.o build/normal/kernel/core/vmm.o build/normal/kernel/lib/memory.o build/normal/kernel/arch/x86_64/isr.o
+readelf -h build/kernel.elf > build/kernel.readelf.header.txt
+readelf -l build/kernel.elf > build/kernel.readelf.programs.txt
+nm -n build/kernel.elf > build/kernel.syms.txt
+objdump -d -Mintel build/kernel.elf > build/kernel.disasm.txt
+grep -q 'ELF64' build/kernel.readelf.header.txt
+grep -q 'Machine:[[:space:]]*Advanced Micro Devices X86-64' build/kernel.readelf.header.txt
+grep -q 'kmain' build/kernel.syms.txt
+grep -q 'x86_64_idt_init' build/kernel.syms.txt
+grep -q 'x86_64_trap_dispatch' build/kernel.syms.txt
+grep -q 'iretq' build/kernel.disasm.txt
+grep -q 'lidt' build/kernel.disasm.txt
+mkdir -p build
+clang -std=c17 -Wall -Wextra -Werror -Ikernel/include -Ikernel/include/mcsos -DMCSOS_HOST_TEST -c kernel/core/vmm.c -o build/vmm.o
+mkdir -p build
+clang -std=c17 -Wall -Wextra -Werror -Ikernel/include -Ikernel/include/mcsos -DMCSOS_HOST_TEST kernel/core/vmm.c tests/test_vmm_host.c -o build/test_vmm_host
+./build/test_vmm_host
+M7 VMM host tests PASS
+nm -u build/vmm.o
+objdump -dr build/vmm.o > build/vmm.objdump.txt
+grep -q "cr3" build/vmm.objdump.txt
+[PASS] static grade M7 selesai
+syifa@WIN-E2QNIIEGDH4:~/src/mcsos$ cat scripts/grade_m7.sh
+#!/usr/bin/env bash
+set -euo pipefail
+
+make clean >/dev/null 2>&1 || true
+
+mkdir -p build/evidence
+
+make
+make check-m7 2>&1 | tee build/evidence/m7_make_check.log
+
+readelf -h build/vmm.o > build/evidence/m7_vmm_readelf_header.txt
+readelf -S build/vmm.o > build/evidence/m7_vmm_readelf_sections.txt
+nm -u build/vmm.o > build/evidence/m7_vmm_nm_undefined.txt
+objdump -dr build/normal/kernel/core/vmm.o > build/evidence/m7_vmm_objdump.txt
+
+if [ -s build/evidence/m7_vmm_nm_undefined.txt ]; then
+    echo "[FAIL] unresolved symbol ditemukan pada build/vmm.o" >&2
+    exit 1
+fi
+
+grep -q "invlpg" build/evidence/m7_vmm_objdump.txt
+grep -q "cr3" build/evidence/m7_vmm_objdump.txt
+
+echo "[PASS] static grade M7 selesai"
+syifa@WIN-E2QNIIEGDH4:~/src/mcsos$ ls build/normal/kernel/core/vmm.o
+build/normal/kernel/core/vmm.o
+syifa@WIN-E2QNIIEGDH4:~/src/mcsos$ ./scripts/grade_m7.sh
+mkdir -p build/normal/kernel/arch/x86_64/
+clang --target=x86_64-unknown-none-elf -std=c17 -ffreestanding -fno-builtin -fno-stack-protector -fno-stack-check -fno-pic -fno-pie -fno-lto -m64 -march=x86-64 -mabi=sysv -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -mcmodel=kernel -Wall -Wextra -Werror -Ikernel/arch/x86_64/include -Ikernel/include -c kernel/arch/x86_64/idt.c -o build/normal/kernel/arch/x86_64/idt.o
+mkdir -p build/normal/kernel/core/
+clang --target=x86_64-unknown-none-elf -std=c17 -ffreestanding -fno-builtin -fno-stack-protector -fno-stack-check -fno-pic -fno-pie -fno-lto -m64 -march=x86-64 -mabi=sysv -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -mcmodel=kernel -Wall -Wextra -Werror -Ikernel/arch/x86_64/include -Ikernel/include -c kernel/core/kmain.c -o build/normal/kernel/core/kmain.o
+mkdir -p build/normal/kernel/core/
+clang --target=x86_64-unknown-none-elf -std=c17 -ffreestanding -fno-builtin -fno-stack-protector -fno-stack-check -fno-pic -fno-pie -fno-lto -m64 -march=x86-64 -mabi=sysv -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -mcmodel=kernel -Wall -Wextra -Werror -Ikernel/arch/x86_64/include -Ikernel/include -c kernel/core/log.c -o build/normal/kernel/core/log.o
+mkdir -p build/normal/kernel/core/
+clang --target=x86_64-unknown-none-elf -std=c17 -ffreestanding -fno-builtin -fno-stack-protector -fno-stack-check -fno-pic -fno-pie -fno-lto -m64 -march=x86-64 -mabi=sysv -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -mcmodel=kernel -Wall -Wextra -Werror -Ikernel/arch/x86_64/include -Ikernel/include -c kernel/core/panic.c -o build/normal/kernel/core/panic.o
+mkdir -p build/normal/kernel/core/
+clang --target=x86_64-unknown-none-elf -std=c17 -ffreestanding -fno-builtin -fno-stack-protector -fno-stack-check -fno-pic -fno-pie -fno-lto -m64 -march=x86-64 -mabi=sysv -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -mcmodel=kernel -Wall -Wextra -Werror -Ikernel/arch/x86_64/include -Ikernel/include -c kernel/core/pic.c -o build/normal/kernel/core/pic.o
+mkdir -p build/normal/kernel/core/
+clang --target=x86_64-unknown-none-elf -std=c17 -ffreestanding -fno-builtin -fno-stack-protector -fno-stack-check -fno-pic -fno-pie -fno-lto -m64 -march=x86-64 -mabi=sysv -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -mcmodel=kernel -Wall -Wextra -Werror -Ikernel/arch/x86_64/include -Ikernel/include -c kernel/core/pit.c -o build/normal/kernel/core/pit.o
+mkdir -p build/normal/kernel/core/
+clang --target=x86_64-unknown-none-elf -std=c17 -ffreestanding -fno-builtin -fno-stack-protector -fno-stack-check -fno-pic -fno-pie -fno-lto -m64 -march=x86-64 -mabi=sysv -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -mcmodel=kernel -Wall -Wextra -Werror -Ikernel/arch/x86_64/include -Ikernel/include -c kernel/core/pmm.c -o build/normal/kernel/core/pmm.o
+mkdir -p build/normal/kernel/core/
+clang --target=x86_64-unknown-none-elf -std=c17 -ffreestanding -fno-builtin -fno-stack-protector -fno-stack-check -fno-pic -fno-pie -fno-lto -m64 -march=x86-64 -mabi=sysv -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -mcmodel=kernel -Wall -Wextra -Werror -Ikernel/arch/x86_64/include -Ikernel/include -c kernel/core/serial.c -o build/normal/kernel/core/serial.o
+mkdir -p build/normal/kernel/core/
+clang --target=x86_64-unknown-none-elf -std=c17 -ffreestanding -fno-builtin -fno-stack-protector -fno-stack-check -fno-pic -fno-pie -fno-lto -m64 -march=x86-64 -mabi=sysv -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -mcmodel=kernel -Wall -Wextra -Werror -Ikernel/arch/x86_64/include -Ikernel/include -c kernel/core/trap.c -o build/normal/kernel/core/trap.o
+mkdir -p build/normal/kernel/core/
+clang --target=x86_64-unknown-none-elf -std=c17 -ffreestanding -fno-builtin -fno-stack-protector -fno-stack-check -fno-pic -fno-pie -fno-lto -m64 -march=x86-64 -mabi=sysv -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -mcmodel=kernel -Wall -Wextra -Werror -Ikernel/arch/x86_64/include -Ikernel/include -c kernel/core/vmm.c -o build/normal/kernel/core/vmm.o
+mkdir -p build/normal/kernel/lib/
+clang --target=x86_64-unknown-none-elf -std=c17 -ffreestanding -fno-builtin -fno-stack-protector -fno-stack-check -fno-pic -fno-pie -fno-lto -m64 -march=x86-64 -mabi=sysv -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -mcmodel=kernel -Wall -Wextra -Werror -Ikernel/arch/x86_64/include -Ikernel/include -c kernel/lib/memory.c -o build/normal/kernel/lib/memory.o
+mkdir -p build/normal/kernel/arch/x86_64/
+clang --target=x86_64-unknown-none-elf -ffreestanding -fno-pic -fno-pie -m64 -mno-red-zone -Wall -Wextra -Werror -Ikernel/arch/x86_64/include -Ikernel/include -c kernel/arch/x86_64/isr.S -o build/normal/kernel/arch/x86_64/isr.o
+mkdir -p build
+ld.lld -nostdlib -static -z max-page-size=0x1000 -T linker.ld -Map=build/kernel.map -o build/kernel.elf build/normal/kernel/arch/x86_64/idt.o build/normal/kernel/core/kmain.o build/normal/kernel/core/log.o build/normal/kernel/core/panic.o build/normal/kernel/core/pic.o build/normal/kernel/core/pit.o build/normal/kernel/core/pmm.o build/normal/kernel/core/serial.o build/normal/kernel/core/trap.o build/normal/kernel/core/vmm.o build/normal/kernel/lib/memory.o build/normal/kernel/arch/x86_64/isr.o
+readelf -h build/kernel.elf > build/kernel.readelf.header.txt
+readelf -l build/kernel.elf > build/kernel.readelf.programs.txt
+nm -n build/kernel.elf > build/kernel.syms.txt
+objdump -d -Mintel build/kernel.elf > build/kernel.disasm.txt
+grep -q 'ELF64' build/kernel.readelf.header.txt
+grep -q 'Machine:[[:space:]]*Advanced Micro Devices X86-64' build/kernel.readelf.header.txt
+grep -q 'kmain' build/kernel.syms.txt
+grep -q 'x86_64_idt_init' build/kernel.syms.txt
+grep -q 'x86_64_trap_dispatch' build/kernel.syms.txt
+grep -q 'iretq' build/kernel.disasm.txt
+grep -q 'lidt' build/kernel.disasm.txt
+mkdir -p build
+clang -std=c17 -Wall -Wextra -Werror -Ikernel/include -Ikernel/include/mcsos -DMCSOS_HOST_TEST -c kernel/core/vmm.c -o build/vmm.o
+mkdir -p build
+clang -std=c17 -Wall -Wextra -Werror -Ikernel/include -Ikernel/include/mcsos -DMCSOS_HOST_TEST kernel/core/vmm.c tests/test_vmm_host.c -o build/test_vmm_host
+./build/test_vmm_host
+M7 VMM host tests PASS
+nm -u build/vmm.o
+objdump -dr build/vmm.o > build/vmm.objdump.txt
+grep -q "cr3" build/vmm.objdump.txt
+[PASS] static grade M7 selesai
+syifa@WIN-E2QNIIEGDH4:~/src/mcsos$ ls build/evidence
+s/reportsm7_make_check.log        m7_vmm_objdump.txt         m7_vmm_readelf_sections.txt
+m7_vmm_nm_undefined.txt  m7_vmm_readelf_header.txt
+syifa@WIN-E2QNIIEGDH4:~/src/mcsos$ ls docs/reports
+M0-laporan.md
+syifa@WIN-E2QNIIEGDH4:~/src/mcsos$ ls screenshots
+ls: cannot access 'screenshots': No such file or directory
+syifa@WIN-E2QNIIEGDH4:~/src/mcsos$ ls
+Makefile   build    evidence      kernel     ptc.txt  tests
+README.md  configs  iso_root      linker.ld  scripts  third_party
+audit.txt  docs     isr_stub.txt  mcsos.zip  smoke    tools
+syifa@WIN-E2QNIIEGDH4:~/src/mcsos$ grep -n "qemu\|run:" Makefile
+syifa@WIN-E2QNIIEGDH4:~/src/mcsos$ ls iso_root
+EFI  boot
+syifa@WIN-E2QNIIEGDH4:~/src/mcsos$ find iso_root -type f
+iso_root/EFI/BOOT/BOOTX64.EFI
+iso_root/EFI/BOOT/BOOTIA32.EFI
+iso_root/boot/limine/limine-uefi-cd.bin
+iso_root/boot/limine/limine-bios-cd.bin
+iso_root/boot/limine/limine.conf
+iso_root/boot/limine/limine-bios.sys
+iso_root/boot/kernel.elf
+syifa@WIN-E2QNIIEGDH4:~/src/mcsos$ qemu-system-x86_64 --version
+QEMU emulator version 10.2.1 (Debian 1:10.2.1+ds-1ubuntu3)
+Copyright (c) 2003-2025 Fabrice Bellard and the QEMU Project developers
+syifa@WIN-E2QNIIEGDH4:~/src/mcsos$ find build -name "*.iso"
+syifa@WIN-E2QNIIEGDH4:~/src/mcsos$ grep -n "iso\|limine\|xorriso" Makefile
+145:>rm -rf iso_root limine evidence
+syifa@WIN-E2QNIIEGDH4:~/src/mcsos$ ls build
+evidence           kernel.map                   kernel.syms.txt  vmm.o
+kernel.disasm.txt  kernel.readelf.header.txt    normal           vmm.objdump.txt
+kernel.elf         kernel.readelf.programs.txt  test_vmm_host
+syifa@WIN-E2QNIIEGDH4:~/src/mcsos$ which xorriso
+ich mkisofs
+which grub-mkrescue/usr/bin/xorriso
+syifa@WIN-E2QNIIEGDH4:~/src/mcsos$ which mkisofs
+syifa@WIN-E2QNIIEGDH4:~/src/mcsos$ which grub-mkrescue
+syifa@WIN-E2QNIIEGDH4:~/src/mcsos$ ls iso_root/boot/limine
+limine-bios-cd.bin  limine-bios.sys  limine-uefi-cd.bin  limine.conf
+syifa@WIN-E2QNIIEGDH4:~/src/mcsos$ ls *.iso
+ls: cannot access '*.iso': No such file or directory
+syifa@WIN-E2QNIIEGDH4:~/src/mcsos$ find . -name "*.iso"
+syifa@WIN-E2QNIIEGDH4:~/src/mcsos$ ls -l iso_root/boot/kernel.elf
+-rwxr-xr-x 1 syifa syifa 21544 Jul  3 11:11 iso_root/boot/kernel.elf
+syifa@WIN-E2QNIIEGDH4:~/src/mcsos$ xorriso -as mkisofs \
+ boot/li> -b boot/limine/limine-bios-cd.bin \
+> -no-emul-boot \
+load-siz> -boot-load-size 4 \
+> -boot-info-table \
+> --efi-boot boot/limine/limine-uefi-cd.bin \
+i-boot-part --ef> -efi-boot-part --efi-boot-image \
+> --protective-msdos-label \
+oot -o b> iso_root -o build/mcsos.iso
+xorriso 1.5.6 : RockRidge filesystem manipulator, libburnia project.
+
+Drive current: -outdev 'stdio:build/mcsos.iso'
+Media current: stdio file, overwriteable
+Media status : is blank
+Media summary: 0 sessions, 0 data blocks, 0 data,  952g free
+Added to ISO image: directory '/'='/home/syifa/src/mcsos/iso_root'
+xorriso : UPDATE :      11 files added in 1 seconds
+xorriso : UPDATE :      11 files added in 1 seconds
+ISO image produced: 2104 sectors
+Written to medium : 2104 sectors at LBA 0
+Writing to 'stdio:build/mcsos.iso' completed successfully.
+
+syifa@WIN-E2QNIIEGDH4:~/src/mcsos$ qemu-system-x86_64 \
+-cdrom b>   -cdrom build/mcsos.iso \
+>   -m 256M \
+>   -serial stdio
+limine: Loading executable `boot():/boot/kernel.elf`...
+[MCSOS:M5] boot: external interrupt bring-up start
+idt_base=0xffffffff80004000
+idt_limit=0x0000000000000fff
+[M4] IDT loaded
+[MCSOS:M5] idt: loaded
+[MCSOS:M5] pic: remapped; mask master=0x00000000000000fe slave=0x00000000000000ff
+[MCSOS:M5] pit: configured 100Hz
+[MCSOS:M5] sti: enabling interrupts
+[MCSOS:TIMER] ticks=0x0000000000000064
+[MCSOS:TIMER] ticks=0x00000000000000c8
+[MCSOS:TIMER] ticks=0x000000000000012c
+[MCSOS:TIMER] ticks=0x0000000000000190
+[MCSOS:TIMER] ticks=0x00000000000001f4
+[MCSOS:TIMER] ticks=0x0000000000000258
+[MCSOS:TIMER] ticks=0x00000000000002bc
+[MCSOS:TIMER] ticks=0x0000000000000320
+[MCSOS:TIMER] ticks=0x0000000000000384
+[MCSOS:TIMER] ticks=0x00000000000003e8
+[MCSOS:TIMER] ticks=0x000000000000044c
+[MCSOS:TIMER] ticks=0x00000000000004b0
+[MCSOS:TIMER] ticks=0x0000000000000514
+[MCSOS:TIMER] ticks=0x0000000000000578
+[MCSOS:TIMER] ticks=0x00000000000005dc
+[MCSOS:TIMER] ticks=0x0000000000000640
+[MCSOS:TIMER] ticks=0x00000000000006a4
+[MCSOS:TIMER] ticks=0x0000000000000708
+[MCSOS:TIMER] ticks=0x000000000000076c
+[MCSOS:TIMER] ticks=0x00000000000007d0
+[MCSOS:TIMER] ticks=0x0000000000000834
+qemu: terminating on signal 2
+syifa@WIN-E2QNIIEGDH4:~/src/mcsos$ qemu-system-x86_64 \
+>   -cdrom build/mcsos.iso \
+6M \
+  >   -m 256M \
+>   -serial stdio \
+>   -s -S
+limine: Loading executable `boot():/boot/kernel.elf`...
+syifa@WIN-E2QNIIEGDH4:~$ cd ~/src/mcsos
+syifa@WIN-E2QNIIEGDH4:~/src/mcsos$ ls build/evidence
+m7_make_check.log        m7_vmm_objdump.txt         m7_vmm_readelf_sections.txt
+m7_vmm_nm_undefined.txt  m7_vmm_readelf_header.txt
+syifa@WIN-E2QNIIEGDH4:~/src/mcsos$ ls docs
+adr           evidence    operations  reports       security
+architecture  governance  readiness   requirements  testing
+syifa@WIN-E2QNIIEGDH4:~/src/mcsos$ find . -name "*.png" -o -name "*.jpg"
+./docs/evidence/M2/screenshot-grade-m2.png
+./docs/evidence/M2/screenshot-make-build.png
+./docs/evidence/M4/4.10 Debug GDB.png
+./docs/evidence/M4/4.12 - Evidence M4.png
+./docs/evidence/M4/4.11 Local Grading.png
+./docs/evidence/M4/4.2 Preflight M4.png
+./docs/evidence/M4/4.6 Pembuatan ISO M4.png
+./docs/evidence/M4/4.9 Breakpoint Exception.png
+./docs/evidence/M4/4.4 Audit M4.png
+./docs/evidence/M4/4.8 Log Serial M4.png
+./docs/evidence/M4/4.5 Audit ELF M4.png
+./docs/evidence/M4/4.7 QEMU Smoke Test.png
+./docs/evidence/M4/4.13 Git Commit M4.png
+./docs/evidence/M4/4.3 Build Kernel M4.png
+./docs/evidence/M4/4.1 Branch M4.png
+./docs/evidence/M6/M6-git-status.png
+./docs/evidence/M6/M6-host-test-pass.png
+./docs/evidence/M6/M6-build-success.png
+./docs/evidence/M6/M6-symbols.png
+./docs/evidence/m3/ss_grade_m3_100.png
+./docs/evidence/m3/ss_evidence_m3.png
+syifa@WIN-E2QNIIEGDH4:~/src/mcsos$ ls build/evidence
+m7_make_check.log        m7_vmm_objdump.txt         m7_vmm_readelf_sections.txt
+m7_vmm_nm_undefined.txt  m7_vmm_readelf_header.txt
+syifa@WIN-E2QNIIEGDH4:~/src/mcsos$ ls docs/reports
+M0-laporan.md
+syifa@WIN-E2QNIIEGDH4:~/src/mcsos$ mkdir -p docs/reports
+no docs/reports/M7-laporan.mdsyifa@WIN-E2QNIIEGDH4:~/src/mcsos$ nano docs/reports/M7-laporan.md
+syifa@WIN-E2QNIIEGDH4:~/src/mcsos$ ls docs/reports
+M0-laporan.md
+syifa@WIN-E2QNIIEGDH4:~/src/mcsos$ git log --oneline -5
+bc3b131 (HEAD -> praktikum/m6-pmm, origin/praktikum/m6-pmm) M6: implement physical memory manager (PMM)
+0bb81d8 (origin/praktikum/m5-timer-irq, praktikum/m5-timer-irq) M5: PIC, PIT, IRQ0 timer interrupt
+82fccdf (origin/m4-idt-exception-path, m4-idt-exception-path) M4 add x86_64 IDT and exception trap path
+06de7f8 (main) Complete M3 panic logging baseline
+9f8fbed (origin/main) M3 panic path logging gdb and disassembly audit
+syifa@WIN-E2QNIIEGDH4:~/src/mcsos$ git status
+On branch praktikum/m6-pmm
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+        modified:   Makefile
+        modified:   kernel/core/kmain.c
+        modified:   kernel/core/trap.c
+
+Untracked files:
+  (use "git add <file>..." to include in what will be committed)
+        docs/evidence/M6/
+        kernel/core/vmm.c
+        kernel/include/mcsos/vmm.h
+        scripts/grade_m7.sh
+        tests/test_vmm_host.c
+
+no changes added to commit (use "git add" and/or "git commit -a")
+syifa@WIN-E2QNIIEGDH4:~/src/mcsos$ git checkout -b praktikum/m7-vmm
+Switched to a new branch 'praktikum/m7-vmm'
+syifa@WIN-E2QNIIEGDH4:~/src/mcsos$ git add Makefile
+d kernel/core/kmain.c
+git add kernel/core/trap.c
+git add kernel/core/vmm.c
+git add kernel/include/mcsos/vmm.h
+git add scripts/grade_m7.sh
+git add tests/test_vmm_host.csyifa@WIN-E2QNIIEGDH4:~/src/mcsos$ git add kernel/core/kmain.c
+syifa@WIN-E2QNIIEGDH4:~/src/mcsos$ git add kernel/core/trap.c
+syifa@WIN-E2QNIIEGDH4:~/src/mcsos$ git add kernel/core/vmm.c
+syifa@WIN-E2QNIIEGDH4:~/src/mcsos$ git add kernel/include/mcsos/vmm.h
+syifa@WIN-E2QNIIEGDH4:~/src/mcsos$ git add scripts/grade_m7.sh
+syifa@WIN-E2QNIIEGDH4:~/src/mcsos$ git add tests/test_vmm_host.c
+syifa@WIN-E2QNIIEGDH4:~/src/mcsos$ git status
+On branch praktikum/m7-vmm
+Changes to be committed:
+  (use "git restore --staged <file>..." to unstage)
+        modified:   Makefile
+        modified:   kernel/core/kmain.c
+        modified:   kernel/core/trap.c
+        new file:   kernel/core/vmm.c
+        new file:   kernel/include/mcsos/vmm.h
+        new file:   scripts/grade_m7.sh
+        new file:   tests/test_vmm_host.c
+
+Untracked files:
+  (use "git add <file>..." to include in what will be committed)
+        docs/evidence/M6/
+
+syifa@WIN-E2QNIIEGDH4:~/src/mcsos$ git commit -m "M7: implement virtual memory manager (VMM)"
+[praktikum/m7-vmm 40a6aa4] M7: implement virtual memory manager (VMM)
+ 7 files changed, 458 insertions(+), 1 deletion(-)
+ create mode 100644 kernel/core/vmm.c
+ create mode 100644 kernel/include/mcsos/vmm.h
+ create mode 100755 scripts/grade_m7.sh
+ create mode 100644 tests/test_vmm_host.c
+syifa@WIN-E2QNIIEGDH4:~/src/mcsos$ git push -u origin praktikum/m7-vmm
+Username for 'https://github.com': syifa nurzimah
+Password for 'https://syifa%20nurzimah@github.com':
+Enumerating objects: 25, done.
+Counting objects: 100% (25/25), done.
+Delta compression using up to 4 threads
+Compressing objects: 100% (14/14), done.
+Writing objects: 100% (15/15), 4.90 KiB | 558.00 KiB/s, done.
+Total 15 (delta 6), reused 0 (delta 0), pack-reused 0 (from 0)
+remote: Resolving deltas: 100% (6/6), completed with 6 local objects.
+remote:
+remote: Create a pull request for 'praktikum/m7-vmm' on GitHub by visiting:
+remote:      https://github.com/syifanurzimah/MCSOS/pull/new/praktikum/m7-vmm
+remote:
+To https://github.com/syifanurzimah/MCSOS.git
+ * [new branch]      praktikum/m7-vmm -> praktikum/m7-vmm
+branch 'praktikum/m7-vmm' set up to track 'origin/praktikum/m7-vmm'.
+syifa@WIN-E2QNIIEGDH4:~/src/mcsos$ git log --oneline -3
+40a6aa4 (HEAD -> praktikum/m7-vmm, origin/praktikum/m7-vmm) M7: implement virtual memory manager (VMM)
+bc3b131 (origin/praktikum/m6-pmm, praktikum/m6-pmm) M6: implement physical memory manager (PMM)
+0bb81d8 (origin/praktikum/m5-timer-irq, praktikum/m5-timer-irq) M5: PIC, PIT, IRQ0 timer interrupt
+syifa@WIN-E2QNIIEGDH4:~/src/mcsos$ git branch
+  m4-idt-exception-path
+  main
+  praktikum/m5-timer-irq
+  praktikum/m6-pmm
+* praktikum/m7-vmm
+syifa@WIN-E2QNIIEGDH4:~/src/mcsos$ it log --oneline -3
+it: command not found
+syifa@WIN-E2QNIIEGDH4:~/src/mcsos$ make
+readelf -h build/kernel.elf > build/kernel.readelf.header.txt
+readelf -l build/kernel.elf > build/kernel.readelf.programs.txt
+nm -n build/kernel.elf > build/kernel.syms.txt
+objdump -d -Mintel build/kernel.elf > build/kernel.disasm.txt
+grep -q 'ELF64' build/kernel.readelf.header.txt
+grep -q 'Machine:[[:space:]]*Advanced Micro Devices X86-64' build/kernel.readelf.header.txt
+grep -q 'kmain' build/kernel.syms.txt
+grep -q 'x86_64_idt_init' build/kernel.syms.txt
+grep -q 'x86_64_trap_dispatch' build/kernel.syms.txt
+grep -q 'iretq' build/kernel.disasm.txt
+grep -q 'lidt' build/kernel.disasm.txt
+syifa@WIN-E2QNIIEGDH4:~/src/mcsos$ make check-m7
+./build/test_vmm_host
+M7 VMM host tests PASS
+nm -u build/vmm.o
+objdump -dr build/vmm.o > build/vmm.objdump.txt
+grep -q "cr3" build/vmm.objdump.txt
+syifa@WIN-E2QNIIEGDH4:~/src/mcsos$ ./scripts/grade_m7.sh
+mkdir -p build/normal/kernel/arch/x86_64/
+clang --target=x86_64-unknown-none-elf -std=c17 -ffreestanding -fno-builtin -fno-stack-protector -fno-stack-check -fno-pic -fno-pie -fno-lto -m64 -march=x86-64 -mabi=sysv -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -mcmodel=kernel -Wall -Wextra -Werror -Ikernel/arch/x86_64/include -Ikernel/include -c kernel/arch/x86_64/idt.c -o build/normal/kernel/arch/x86_64/idt.o
+mkdir -p build/normal/kernel/core/
+clang --target=x86_64-unknown-none-elf -std=c17 -ffreestanding -fno-builtin -fno-stack-protector -fno-stack-check -fno-pic -fno-pie -fno-lto -m64 -march=x86-64 -mabi=sysv -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -mcmodel=kernel -Wall -Wextra -Werror -Ikernel/arch/x86_64/include -Ikernel/include -c kernel/core/kmain.c -o build/normal/kernel/core/kmain.o
+mkdir -p build/normal/kernel/core/
+clang --target=x86_64-unknown-none-elf -std=c17 -ffreestanding -fno-builtin -fno-stack-protector -fno-stack-check -fno-pic -fno-pie -fno-lto -m64 -march=x86-64 -mabi=sysv -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -mcmodel=kernel -Wall -Wextra -Werror -Ikernel/arch/x86_64/include -Ikernel/include -c kernel/core/log.c -o build/normal/kernel/core/log.o
+mkdir -p build/normal/kernel/core/
+clang --target=x86_64-unknown-none-elf -std=c17 -ffreestanding -fno-builtin -fno-stack-protector -fno-stack-check -fno-pic -fno-pie -fno-lto -m64 -march=x86-64 -mabi=sysv -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -mcmodel=kernel -Wall -Wextra -Werror -Ikernel/arch/x86_64/include -Ikernel/include -c kernel/core/panic.c -o build/normal/kernel/core/panic.o
+mkdir -p build/normal/kernel/core/
+clang --target=x86_64-unknown-none-elf -std=c17 -ffreestanding -fno-builtin -fno-stack-protector -fno-stack-check -fno-pic -fno-pie -fno-lto -m64 -march=x86-64 -mabi=sysv -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -mcmodel=kernel -Wall -Wextra -Werror -Ikernel/arch/x86_64/include -Ikernel/include -c kernel/core/pic.c -o build/normal/kernel/core/pic.o
+mkdir -p build/normal/kernel/core/
+clang --target=x86_64-unknown-none-elf -std=c17 -ffreestanding -fno-builtin -fno-stack-protector -fno-stack-check -fno-pic -fno-pie -fno-lto -m64 -march=x86-64 -mabi=sysv -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -mcmodel=kernel -Wall -Wextra -Werror -Ikernel/arch/x86_64/include -Ikernel/include -c kernel/core/pit.c -o build/normal/kernel/core/pit.o
+mkdir -p build/normal/kernel/core/
+clang --target=x86_64-unknown-none-elf -std=c17 -ffreestanding -fno-builtin -fno-stack-protector -fno-stack-check -fno-pic -fno-pie -fno-lto -m64 -march=x86-64 -mabi=sysv -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -mcmodel=kernel -Wall -Wextra -Werror -Ikernel/arch/x86_64/include -Ikernel/include -c kernel/core/pmm.c -o build/normal/kernel/core/pmm.o
+mkdir -p build/normal/kernel/core/
+clang --target=x86_64-unknown-none-elf -std=c17 -ffreestanding -fno-builtin -fno-stack-protector -fno-stack-check -fno-pic -fno-pie -fno-lto -m64 -march=x86-64 -mabi=sysv -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -mcmodel=kernel -Wall -Wextra -Werror -Ikernel/arch/x86_64/include -Ikernel/include -c kernel/core/serial.c -o build/normal/kernel/core/serial.o
+mkdir -p build/normal/kernel/core/
+clang --target=x86_64-unknown-none-elf -std=c17 -ffreestanding -fno-builtin -fno-stack-protector -fno-stack-check -fno-pic -fno-pie -fno-lto -m64 -march=x86-64 -mabi=sysv -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -mcmodel=kernel -Wall -Wextra -Werror -Ikernel/arch/x86_64/include -Ikernel/include -c kernel/core/trap.c -o build/normal/kernel/core/trap.o
+mkdir -p build/normal/kernel/core/
+clang --target=x86_64-unknown-none-elf -std=c17 -ffreestanding -fno-builtin -fno-stack-protector -fno-stack-check -fno-pic -fno-pie -fno-lto -m64 -march=x86-64 -mabi=sysv -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -mcmodel=kernel -Wall -Wextra -Werror -Ikernel/arch/x86_64/include -Ikernel/include -c kernel/core/vmm.c -o build/normal/kernel/core/vmm.o
+mkdir -p build/normal/kernel/lib/
+clang --target=x86_64-unknown-none-elf -std=c17 -ffreestanding -fno-builtin -fno-stack-protector -fno-stack-check -fno-pic -fno-pie -fno-lto -m64 -march=x86-64 -mabi=sysv -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -mcmodel=kernel -Wall -Wextra -Werror -Ikernel/arch/x86_64/include -Ikernel/include -c kernel/lib/memory.c -o build/normal/kernel/lib/memory.o
+mkdir -p build/normal/kernel/arch/x86_64/
+clang --target=x86_64-unknown-none-elf -ffreestanding -fno-pic -fno-pie -m64 -mno-red-zone -Wall -Wextra -Werror -Ikernel/arch/x86_64/include -Ikernel/include -c kernel/arch/x86_64/isr.S -o build/normal/kernel/arch/x86_64/isr.o
+mkdir -p build
+ld.lld -nostdlib -static -z max-page-size=0x1000 -T linker.ld -Map=build/kernel.map -o build/kernel.elf build/normal/kernel/arch/x86_64/idt.o build/normal/kernel/core/kmain.o build/normal/kernel/core/log.o build/normal/kernel/core/panic.o build/normal/kernel/core/pic.o build/normal/kernel/core/pit.o build/normal/kernel/core/pmm.o build/normal/kernel/core/serial.o build/normal/kernel/core/trap.o build/normal/kernel/core/vmm.o build/normal/kernel/lib/memory.o build/normal/kernel/arch/x86_64/isr.o
+readelf -h build/kernel.elf > build/kernel.readelf.header.txt
+readelf -l build/kernel.elf > build/kernel.readelf.programs.txt
+nm -n build/kernel.elf > build/kernel.syms.txt
+objdump -d -Mintel build/kernel.elf > build/kernel.disasm.txt
+grep -q 'ELF64' build/kernel.readelf.header.txt
+grep -q 'Machine:[[:space:]]*Advanced Micro Devices X86-64' build/kernel.readelf.header.txt
+grep -q 'kmain' build/kernel.syms.txt
+grep -q 'x86_64_idt_init' build/kernel.syms.txt
+grep -q 'x86_64_trap_dispatch' build/kernel.syms.txt
+grep -q 'iretq' build/kernel.disasm.txt
+grep -q 'lidt' build/kernel.disasm.txt
+mkdir -p build
+clang -std=c17 -Wall -Wextra -Werror -Ikernel/include -Ikernel/include/mcsos -DMCSOS_HOST_TEST -c kernel/core/vmm.c -o build/vmm.o
+mkdir -p build
+clang -std=c17 -Wall -Wextra -Werror -Ikernel/include -Ikernel/include/mcsos -DMCSOS_HOST_TEST kernel/core/vmm.c tests/test_vmm_host.c -o build/test_vmm_host
+./build/test_vmm_host
+M7 VMM host tests PASS
+nm -u build/vmm.o
+objdump -dr build/vmm.o > build/vmm.objdump.txt
+grep -q "cr3" build/vmm.objdump.txt
+[PASS] static grade M7 selesai
+syifa@WIN-E2QNIIEGDH4:~/src/mcsos$ objdump -dr build/normal/kernel/core/vmm.o | grep -n invlpg
+704: 9cd:       0f 01 38                invlpg (%rax)
