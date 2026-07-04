@@ -4,6 +4,7 @@
 #include <mcsos/arch/pit.h>
 #include <mcsos/kernel/log.h>
 #include <mcsos/kernel/panic.h>
+#include <mcsos/vmm.h>
 
 static const char *exception_names[32] = {
     "#DE Divide Error",
@@ -64,6 +65,33 @@ static void log_trap_frame(const x86_64_trap_frame_t *frame) {
     log_key_value_hex64("trap_rdx", frame->rdx);
 }
 
+static void page_fault_dump(const x86_64_trap_frame_t *frame)
+{
+    uint64_t cr2 = vmm_read_cr2();
+
+    log_writeln("#PF page fault");
+
+    log_key_value_hex64("cr2", cr2);
+    log_key_value_hex64("error", frame->error_code);
+    log_key_value_hex64("rip", frame->rip);
+    
+    log_key_value_hex64("present/protection",
+                        (frame->error_code & 1ULL) != 0);
+
+    log_key_value_hex64("write",
+                        (frame->error_code & 2ULL) != 0);
+
+    log_key_value_hex64("user",
+                        (frame->error_code & 4ULL) != 0);
+
+    log_key_value_hex64("reserved",
+                        (frame->error_code & 8ULL) != 0);
+
+    log_key_value_hex64("instruction_fetch",
+                        (frame->error_code & 16ULL) != 0);
+}
+
+
 void x86_64_trap_dispatch(x86_64_trap_frame_t *frame) {
     KERNEL_ASSERT(frame != (x86_64_trap_frame_t *)0);
     ++trap_count;
@@ -73,10 +101,16 @@ void x86_64_trap_dispatch(x86_64_trap_frame_t *frame) {
 
         if (frame->vector == 32u) {
             timer_on_irq0();
-        }
+ }
 
         pic_send_eoi((uint8_t)(frame->vector - 32u));
         return;
+    }
+
+    /* Page Fault */
+    if (frame->vector == 14u) {
+        page_fault_dump(frame);
+        KERNEL_PANIC("page fault", frame->vector);
     }
 
     /* Breakpoint */
@@ -92,3 +126,4 @@ void x86_64_trap_dispatch(x86_64_trap_frame_t *frame) {
 
     KERNEL_PANIC("unrecoverable CPU exception", frame->vector);
 }
+

@@ -124,6 +124,20 @@ check-m6: build/pmm.o build/test_pmm_host
 >test ! -s build/pmm.undefined.txt
 >$(OBJDUMP) -dr build/pmm.o > build/pmm.objdump.txt
 
+build/vmm.o: kernel/core/vmm.c kernel/include/mcsos/vmm.h kernel/include/mcsos/types.h
+>mkdir -p $(BUILD_DIR)
+>$(HOSTCC) $(M6_CFLAGS) -DMCSOS_HOST_TEST -c kernel/core/vmm.c -o build/vmm.o
+
+build/test_vmm_host: kernel/core/vmm.c tests/test_vmm_host.c kernel/include/mcsos/vmm.h kernel/include/mcsos/types.h
+>mkdir -p $(BUILD_DIR)
+>$(HOSTCC) $(M6_CFLAGS) -DMCSOS_HOST_TEST kernel/core/vmm.c tests/test_vmm_host.c -o build/test_vmm_host
+
+check-m7: build/vmm.o build/test_vmm_host
+>./build/test_vmm_host
+>$(NM) -u build/vmm.o
+>$(OBJDUMP) -dr build/vmm.o > build/vmm.objdump.txt
+>grep -q "cr3" build/vmm.objdump.txt
+
 clean:
 >rm -rf $(BUILD_DIR)
 
