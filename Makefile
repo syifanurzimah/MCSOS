@@ -141,14 +141,14 @@ check-m7: build/vmm.o build/test_vmm_host
 CC ?= clang
 CFLAGS_COMMON := -std=c17 -Wall -Wextra -Werror -Iinclude
 CFLAGS_KERNEL := $(CFLAGS_COMMON) -ffreestanding -fno-builtin -fno-stack-protector -mno-red-zone
-BUILD_DIR := build/m8
+M8_BUILD_DIR := build/m8
 
 .PHONY: m8-clean m8-kmem-host-test m8-kmem-freestanding m8-audit m8-all
 
 m8-clean:
 >$(RM) -r $(BUILD_DIR)
 
-$(BUILD_DIR):
+$(M8_BUILD_DIR):
 >mkdir -p $(BUILD_DIR)
 
 m8-kmem-freestanding: | $(BUILD_DIR)
@@ -165,6 +165,47 @@ m8-audit: m8-kmem-freestanding
 >objdump -dr $(BUILD_DIR)/kmem.freestanding.o > $(BUILD_DIR)/kmem.objdump.txt
 
 m8-all: m8-kmem-host-test m8-audit
+M9_BUILD := build/m9
+
+.PHONY: check-m9 m9-clean
+
+m9-all: check-m9
+
+m9-clean:
+>rm -rf $(M9_BUILD)
+
+$(M9_BUILD):
+>mkdir -p $(M9_BUILD)
+
+$(M9_BUILD)/mcsos_thread.o: kernel/mcsos_thread.c include/mcsos/mcsos_thread.h | $(M9_BUILD)
+>$(HOSTCC) -std=c17 -Wall -Wextra -Werror -DMCSOS_HOST_TEST -Iinclude -c kernel/mcsos_thread.c -o $@
+
+$(M9_BUILD)/context_switch.o: kernel/arch/x86_64/context_switch.S | $(M9_BUILD)
+>$(CC) \
+>--target=x86_64-unknown-none-elf \
+>-ffreestanding \
+>-fno-stack-protector \
+>-fno-pic \
+>-mno-red-zone \
+>-c kernel/arch/x86_64/context_switch.S \
+>-o $@
+
+$(M9_BUILD)/test_scheduler: tests/test_scheduler.c kernel/mcsos_thread.c include/mcsos/mcsos_thread.h | $(M9_BUILD)
+>$(HOSTCC) \
+>-std=c17 \
+>-Wall \
+>-Wextra \
+>-Werror \
+>-DMCSOS_HOST_TEST \
+>-Iinclude \
+>tests/test_scheduler.c \
+>kernel/mcsos_thread.c \
+>-o $@
+
+check-m9: $(M9_BUILD)/mcsos_thread.o $(M9_BUILD)/context_switch.o $(M9_BUILD)/test_scheduler
+>./$(M9_BUILD)/test_scheduler | tee $(M9_BUILD)/test_scheduler.log
+>nm -u $(M9_BUILD)/context_switch.o > $(M9_BUILD)/context_switch.undefined.txt
+>objdump -dr $(M9_BUILD)/context_switch.o > $(M9_BUILD)/context_switch.objdump.txt
 
 clean:
 >rm -rf $(BUILD_DIR)
