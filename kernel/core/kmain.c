@@ -10,6 +10,7 @@
 #include <mcsos/mcsos_thread.h>
 #include <mcsos/user/m11_elf_loader.h>
 #include "../../include/mcsos/syscall.h"
+#include <mcs_sync_selftest.h>
 
 extern void x86_64_syscall_int80_stub(void);
 
@@ -258,7 +259,7 @@ log_writeln("[M10] syscall vector 0x80 installed");
     log_writeln("[MCSOS:M5] pit: configured 100Hz");
 
     m8_heap_bootstrap();
-
+m12_sync_selftest();
 
     if (mcsos_scheduler_init(&g_sched, &g_boot_thread)
         != MCSOS_SCHED_OK) {

@@ -1,0 +1,6 @@
+304cd7957d6819d4558bc1328c835dcaf016c80e3573e9d5dfd4d65376d6b439  build/normal/kernel/sync/lockdep.o
+ae2d9d86106f78058831181fbd702b2d9a8fa8db26fc52163eae15ec84ffe12c  build/normal/kernel/sync/spinlock.o
+7b46ffb28970b0b7bc8e1591d2fb984d53c4d6328b035eeacd481f2edc39ed6f  build/normal/kernel/sync/mutex.o
+71ed2883407e50ef775247ffb4159fda9fad4271c8fd81014d097d3d933fdc70  build/normal/kernel/sync/selftest.o
+80e52f87c80374c5f3fdd2b8f451af677bc4c6c28108e275d71993c989ba198e  build/kernel.elf
+e10dd97a998b3fc95f6bec725d4ead1b4d0b40b71593f6f2d6a375add6d84e74  build/mcsos.iso
