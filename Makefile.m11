@@ -1,0 +1,74 @@
+CC ?= clang
+.RECIPEPREFIX := >
+
+OBJDUMP ?= objdump
+READELF ?= readelf
+NM ?= nm
+SHA256SUM ?= sha256sum
+
+HOST_CFLAGS := -std=c17 -Wall -Wextra -Werror -O2 -g
+
+TARGET_CFLAGS := --target=x86_64-unknown-none-elf \
+	-std=c17 \
+	-Wall \
+	-Wextra \
+	-Werror \
+	-O2 \
+	-g \
+	-ffreestanding \
+	-fno-builtin \
+	-fno-stack-protector \
+	-fno-pic \
+	-mno-red-zone \
+	-c
+
+.PHONY: all host-test freestanding audit clean
+
+all: host-test freestanding audit
+
+
+host-test: m11_host_test
+>./m11_host_test
+
+
+m11_host_test: \
+tests/m11/m11_host_test.c \
+kernel/user/m11_elf_loader.c \
+include/mcsos/user/m11_elf_loader.h
+>$(CC) $(HOST_CFLAGS) \
+>-Iinclude/mcsos/user \
+>tests/m11/m11_host_test.c \
+>kernel/user/m11_elf_loader.c \
+>-o $@
+
+
+freestanding: build/m11_elf_loader.o
+
+
+build/m11_elf_loader.o: \
+kernel/user/m11_elf_loader.c \
+include/mcsos/user/m11_elf_loader.h
+>mkdir -p build
+>$(CC) $(TARGET_CFLAGS) \
+>-Iinclude/mcsos/user \
+>kernel/user/m11_elf_loader.c \
+>-o $@
+
+
+audit: build/m11_elf_loader.o
+>mkdir -p build
+>$(NM) -u build/m11_elf_loader.o > build/m11_nm_undefined.txt
+>test ! -s build/m11_nm_undefined.txt
+>$(READELF) -h build/m11_elf_loader.o > build/m11_readelf_header.txt
+>$(OBJDUMP) -dr build/m11_elf_loader.o > build/m11_objdump.txt
+>$(SHA256SUM) \
+>build/m11_elf_loader.o \
+>kernel/user/m11_elf_loader.c \
+>include/mcsos/user/m11_elf_loader.h \
+>tests/m11/m11_host_test.c > build/m11_sha256.txt
+>grep -q 'ELF64' build/m11_readelf_header.txt
+>grep -q 'm11_elf64_plan_load' build/m11_objdump.txt
+
+
+clean:
+>rm -rf build m11_host_test

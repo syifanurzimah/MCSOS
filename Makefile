@@ -20,7 +20,7 @@ NM := nm
 
 M6_CFLAGS := -std=c17 -Wall -Wextra -Werror -Ikernel/include -Ikernel/include/mcsos
 
-COMMON_CFLAGS := --target=x86_64-unknown-none-elf -std=c17 -ffreestanding -fno-builtin -fno-stack-protector -fno-stack-check -fno-pic -fno-pie -fno-lto -m64 -march=x86-64 -mabi=sysv -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -mcmodel=kernel -Wall -Wextra -Werror -Ikernel/arch/x86_64/include -Ikernel/include -Iinclude
+COMMON_CFLAGS := --target=x86_64-unknown-none-elf -std=c17 -ffreestanding -fno-builtin -fno-stack-protector -fno-stack-check -fno-pic -fno-pie -fno-lto -m64 -march=x86-64 -mabi=sysv -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -mcmodel=kernel -Wall -Wextra -Werror -Ikernel/arch/x86_64/include -Ikernel/include -Iinclude -Iinclude/mcsos/user
 COMMON_ASFLAGS := --target=x86_64-unknown-none-elf -ffreestanding -fno-pic -fno-pie -m64 -mno-red-zone -Wall -Wextra -Werror -Ikernel/arch/x86_64/include -Ikernel/include -Iinclude
 CFLAGS := $(COMMON_CFLAGS)
 ASFLAGS := $(COMMON_ASFLAGS)
@@ -281,3 +281,58 @@ m10-audit: $(M10_BUILD)/m10_syscall_combined.o
 >grep -q "x86_64_syscall_int80_stub" $(M10_BUILD)/objdump.txt
 >grep -q "iretq" $(M10_BUILD)/objdump.txt
 
+M11_BUILD := build/m11
+
+.PHONY: m11-all m11-host-test m11-freestanding m11-audit m11-clean
+
+m11-clean:
+>rm -rf $(M11_BUILD)
+
+$(M11_BUILD):
+>mkdir -p $(M11_BUILD)
+
+$(M11_BUILD)/test_elf_loader: \
+tests/m11/m11_host_test.c \
+kernel/user/m11_elf_loader.c \
+include/mcsos/user/m11_elf_loader.h | $(M11_BUILD)
+>$(HOSTCC) \
+>-std=c17 \
+>-Wall \
+>-Wextra \
+>-Werror \
+>-Iinclude/mcsos/user \
+>tests/m11/m11_host_test.c \
+>kernel/user/m11_elf_loader.c \
+>-o $@
+
+m11-host-test: $(M11_BUILD)/test_elf_loader
+>./$(M11_BUILD)/test_elf_loader
+
+m11-freestanding: $(M11_BUILD)/m11_elf_loader.o
+
+$(M11_BUILD)/m11_elf_loader.o: \
+kernel/user/m11_elf_loader.c \
+include/mcsos/user/m11_elf_loader.h | $(M11_BUILD)
+>$(CC) \
+>--target=x86_64-unknown-none-elf \
+>-std=c17 \
+>-Wall \
+>-Wextra \
+>-Werror \
+>-ffreestanding \
+>-fno-builtin \
+>-fno-stack-protector \
+>-fno-pic \
+>-mno-red-zone \
+>-Iinclude/mcsos/user \
+>-c kernel/user/m11_elf_loader.c \
+>-o $@
+
+m11-audit: m11-freestanding
+>nm -u $(M11_BUILD)/m11_elf_loader.o > $(M11_BUILD)/m11_nm_undefined.txt
+>test ! -s $(M11_BUILD)/m11_nm_undefined.txt
+>readelf -h $(M11_BUILD)/m11_elf_loader.o > $(M11_BUILD)/m11_readelf_header.txt
+>objdump -dr $(M11_BUILD)/m11_elf_loader.o > $(M11_BUILD)/m11_objdump.txt
+>grep -q "m11_elf64_plan_load" $(M11_BUILD)/m11_objdump.txt
+
+m11-all: m11-host-test m11-audit

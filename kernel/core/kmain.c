@@ -8,7 +8,9 @@
 #include <mcsos/pmm.h>
 #include <mcsos/vmm.h>
 #include <mcsos/mcsos_thread.h>
+#include <mcsos/user/m11_elf_loader.h>
 #include "../../include/mcsos/syscall.h"
+
 extern void x86_64_syscall_int80_stub(void);
 
 static __attribute__((unused))
@@ -129,6 +131,76 @@ static void demo_thread_b(void *arg)
         mcsos_sched_yield(&g_sched);
     }
 }
+static void m11_loader_smoke(void)
+{
+    log_writeln("[M11] smoke entered");
+    unsigned char image[4096 * 3] = {0};
+
+    struct m11_elf64_ehdr *eh =
+        (struct m11_elf64_ehdr *)(void *)image;
+
+    eh->e_ident[0] = M11_ELFMAG0;
+    eh->e_ident[1] = M11_ELFMAG1;
+    eh->e_ident[2] = M11_ELFMAG2;
+    eh->e_ident[3] = M11_ELFMAG3;
+    eh->e_ident[4] = M11_ELFCLASS64;
+    eh->e_ident[5] = M11_ELFDATA2LSB;
+    eh->e_ident[6] = M11_EV_CURRENT;
+
+    eh->e_type = M11_ET_EXEC;
+    eh->e_machine = M11_EM_X86_64;
+    eh->e_version = M11_EV_CURRENT;
+
+    eh->e_entry = 0x401000;
+    eh->e_phoff = sizeof(struct m11_elf64_ehdr);
+    eh->e_ehsize = sizeof(struct m11_elf64_ehdr);
+    eh->e_phentsize = sizeof(struct m11_elf64_phdr);
+    eh->e_phnum = 1;
+
+    struct m11_elf64_phdr *ph =
+        (struct m11_elf64_phdr *)(void *)(image + eh->e_phoff);
+
+    ph->p_type = M11_PT_LOAD;
+    ph->p_flags = M11_PF_R | M11_PF_X;
+    ph->p_offset = 0x1000;
+    ph->p_vaddr = 0x401000;
+    ph->p_filesz = 16;
+    ph->p_memsz = 4096;
+    ph->p_align = M11_PAGE_SIZE;
+
+
+    struct m11_process_image_plan plan;
+
+    struct m11_user_region region = {
+        .base = 0x400000,
+        .limit = 0x800000000000
+    };
+
+
+    int rc = m11_elf64_plan_load(
+        image,
+        sizeof(image),
+        region,
+        &plan
+    );
+
+
+    if (rc != M11_OK) {
+        log_write("[M11] loader failed: ");
+        log_writeln(m11_error_name(rc));
+        return;
+    }
+
+
+    log_writeln("[M11] elf: plan ok");
+    log_write("[M11] entry=");
+    log_hex64(plan.entry);
+    log_write(" segments=");
+    log_hex64(plan.segment_count);
+    log_writeln("");
+
+    log_writeln("[M11] user image plan ready");
+}
 static void m10_syscall_smoke_direct(void)
 {
     int64_t r = mcsos_syscall_dispatch(
@@ -213,7 +285,11 @@ mcsos_syscall_set_user_region((mcsos_user_region_t){
 log_writeln("[M10] user region initialized");
 log_writeln("[M10] syscall subsystem initialized");
 
+
 m10_syscall_smoke_direct();
+log_writeln("[M11] before call");
+m11_loader_smoke();
+log_writeln("[M11] after call");
     mcsos_thread_prepare(
         &g_thread_a,
         "demo-a",
