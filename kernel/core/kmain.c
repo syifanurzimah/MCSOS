@@ -8,6 +8,8 @@
 #include <mcsos/pmm.h>
 #include <mcsos/vmm.h>
 #include <mcsos/mcsos_thread.h>
+#include "../../include/mcsos/syscall.h"
+extern void x86_64_syscall_int80_stub(void);
 
 static __attribute__((unused))
 uint64_t kernel_vmm_alloc(void *ctx)
@@ -38,6 +40,37 @@ static mcsos_thread_t g_thread_b;
 
 static unsigned char g_stack_a[8192]
     __attribute__((aligned(16)));
+
+static uint64_t k_get_ticks(void)
+{
+    return timer_ticks();
+}
+
+static void k_yield_current(void)
+{
+    (void)mcsos_sched_yield(&g_sched);
+}
+
+static void k_exit_current(int code)
+{
+    (void)code;
+    log_writeln("[M10] thread_exit stub");
+}
+
+static int64_t k_write_serial(const char *buf, size_t len)
+{
+    if (buf == 0)
+        return -1;
+
+    for (size_t i = 0; i < len; ++i) {
+        char tmp[2];
+        tmp[0] = buf[i];
+        tmp[1] = '\0';
+        log_write(tmp);
+    }
+
+    return (int64_t)len;
+}
 
 static unsigned char g_stack_b[8192]
     __attribute__((aligned(16)));
@@ -96,16 +129,48 @@ static void demo_thread_b(void *arg)
         mcsos_sched_yield(&g_sched);
     }
 }
+static void m10_syscall_smoke_direct(void)
+{
+    int64_t r = mcsos_syscall_dispatch(
+        MCSOS_SYS_PING,
+        0, 0, 0, 0, 0, 0);
+
+    if (r != 0x2605020A) {
+        KERNEL_PANIC("M10 syscall ping failed", r);
+    }
+
+    log_writeln("[M10] syscall ping ok");
+
+    r = mcsos_syscall_dispatch(
+        MCSOS_SYS_GET_TICKS,
+        0, 0, 0, 0, 0, 0);
+
+    if (r < 0) {
+        KERNEL_PANIC("M10 syscall get_ticks failed", r);
+    }
+
+    log_writeln("[M10] syscall get_ticks ok");
+    log_writeln("[M10] syscall smoke done");
+}
 
 void kmain(void)
 {
 
     cpu_cli();
-
     log_init();
     log_writeln("[MCSOS:M5] boot: external interrupt bring-up start");
     x86_64_idt_init();
     log_writeln("[MCSOS:M5] idt: loaded");
+
+#if 0
+x86_64_idt_set_gate(
+    0x80,
+    (uint64_t)x86_64_syscall_int80_stub,
+    X86_64_IDT_GATE_INTERRUPT
+);
+
+log_writeln("[M10] syscall vector 0x80 installed");
+#endif
 
     pic_remap(0x20, 0x28);
     pic_mask_all();
@@ -128,6 +193,27 @@ void kmain(void)
         KERNEL_PANIC("M9 scheduler init failed", 1);
     }
 
+mcsos_syscall_ops_t ops = {
+    .get_ticks = k_get_ticks,
+    .yield_current = k_yield_current,
+    .exit_current = k_exit_current,
+    .write_serial = k_write_serial,
+};
+
+mcsos_syscall_init(&ops);
+
+#define MCSOS_USER_BASE  0x0000000000400000ULL
+#define MCSOS_USER_LIMIT 0x0000800000000000ULL
+
+mcsos_syscall_set_user_region((mcsos_user_region_t){
+    .base = MCSOS_USER_BASE,
+    .limit = MCSOS_USER_LIMIT,
+});
+
+log_writeln("[M10] user region initialized");
+log_writeln("[M10] syscall subsystem initialized");
+
+m10_syscall_smoke_direct();
     mcsos_thread_prepare(
         &g_thread_a,
         "demo-a",

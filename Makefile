@@ -1,5 +1,5 @@
-.RECIPEPREFIX := >
 SHELL := /usr/bin/env bash
+.RECIPEPREFIX := >
 
 BUILD_DIR := build
 KERNEL := $(BUILD_DIR)/kernel.elf
@@ -20,9 +20,8 @@ NM := nm
 
 M6_CFLAGS := -std=c17 -Wall -Wextra -Werror -Ikernel/include -Ikernel/include/mcsos
 
-COMMON_CFLAGS := --target=x86_64-unknown-none-elf -std=c17 -ffreestanding -fno-builtin -fno-stack-protector -fno-stack-check -fno-pic -fno-pie -fno-lto -m64 -march=x86-64 -mabi=sysv -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -mcmodel=kernel -Wall -Wextra -Werror -Ikernel/arch/x86_64/include -Ikernel/include
-COMMON_ASFLAGS := --target=x86_64-unknown-none-elf -ffreestanding -fno-pic -fno-pie -m64 -mno-red-zone -Wall -Wextra -Werror -Ikernel/arch/x86_64/include -Ikernel/include
-
+COMMON_CFLAGS := --target=x86_64-unknown-none-elf -std=c17 -ffreestanding -fno-builtin -fno-stack-protector -fno-stack-check -fno-pic -fno-pie -fno-lto -m64 -march=x86-64 -mabi=sysv -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -mcmodel=kernel -Wall -Wextra -Werror -Ikernel/arch/x86_64/include -Ikernel/include -Iinclude
+COMMON_ASFLAGS := --target=x86_64-unknown-none-elf -ffreestanding -fno-pic -fno-pie -m64 -mno-red-zone -Wall -Wextra -Werror -Ikernel/arch/x86_64/include -Ikernel/include -Iinclude
 CFLAGS := $(COMMON_CFLAGS)
 ASFLAGS := $(COMMON_ASFLAGS)
 BP_CFLAGS := $(COMMON_CFLAGS) -DMCSOS_M4_TRIGGER_BREAKPOINT=1
@@ -37,10 +36,10 @@ OBJ := $(patsubst %.c,$(BUILD_DIR)/normal/%.o,$(SRC_C)) \
        $(patsubst %.S,$(BUILD_DIR)/normal/%.o,$(SRC_S))
 
 BP_OBJ := $(patsubst %.c,$(BUILD_DIR)/breakpoint/%.o,$(SRC_C)) \
-          $(patsubst %.S,$(BUILD_DIR)/breakpoint/%.o,$(SRC_S))
+  $(patsubst %.S,$(BUILD_DIR)/breakpoint/%.o,$(SRC_S))
 
 PANIC_OBJ := $(patsubst %.c,$(BUILD_DIR)/panic/%.o,$(SRC_C)) \
-             $(patsubst %.S,$(BUILD_DIR)/panic/%.o,$(SRC_S))
+     $(patsubst %.S,$(BUILD_DIR)/panic/%.o,$(SRC_S))
 
 .PHONY: all build breakpoint panic inspect audit clean distclean check-m6
 
@@ -212,3 +211,73 @@ clean:
 
 distclean: clean
 >rm -rf iso_root limine evidence
+
+M10_BUILD := build/m10
+
+.PHONY: m10-all m10-host-test m10-audit m10-clean
+
+m10-all: m10-host-test m10-audit
+
+m10-clean:
+>rm -rf $(M10_BUILD)
+
+$(M10_BUILD):
+>mkdir -p $(M10_BUILD)
+
+$(M10_BUILD)/test_syscall_host: \
+tests/test_syscall_host.c \
+kernel/syscall/syscall.c \
+include/mcsos/syscall.h | $(M10_BUILD)
+>$(HOSTCC) \
+>-std=c17 \
+>-Wall \
+>-Wextra \
+>-Werror \
+>-Iinclude \
+>tests/test_syscall_host.c \
+>kernel/syscall/syscall.c \
+>-o $@
+
+$(M10_BUILD)/syscall.o: \
+kernel/syscall/syscall.c \
+include/mcsos/syscall.h | $(M10_BUILD)
+>$(CC) \
+>--target=x86_64-unknown-none-elf \
+>-std=c17 \
+>-ffreestanding \
+>-fno-builtin \
+>-fno-stack-protector \
+>-fno-pic \
+>-fno-pie \
+>-m64 \
+>-mno-red-zone \
+>-Wall \
+>-Wextra \
+>	-Werror \
+>-Iinclude \
+>-c kernel/syscall/syscall.c \
+>-o $@
+
+$(M10_BUILD)/syscall_entry.o: \
+kernel/syscall/syscall_entry.S | $(M10_BUILD)
+>$(CC) \
+>--target=x86_64-unknown-none-elf \
+>-c kernel/syscall/syscall_entry.S \
+>-o $@
+
+$(M10_BUILD)/m10_syscall_combined.o: \
+$(M10_BUILD)/syscall.o \
+$(M10_BUILD)/syscall_entry.o
+>ld -r $^ -o $@
+
+m10-host-test: $(M10_BUILD)/test_syscall_host
+>./$(M10_BUILD)/test_syscall_host
+
+m10-audit: $(M10_BUILD)/m10_syscall_combined.o
+>nm -u $(M10_BUILD)/m10_syscall_combined.o > $(M10_BUILD)/nm_undefined.txt
+>readelf -h $(M10_BUILD)/m10_syscall_combined.o > $(M10_BUILD)/readelf_header.txt
+>objdump -dr $(M10_BUILD)/m10_syscall_combined.o > $(M10_BUILD)/objdump.txt
+>grep -q "Machine:.*Advanced Micro Devices X86-64" $(M10_BUILD)/readelf_header.txt
+>grep -q "x86_64_syscall_int80_stub" $(M10_BUILD)/objdump.txt
+>grep -q "iretq" $(M10_BUILD)/objdump.txt
+
