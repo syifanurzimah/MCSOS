@@ -336,3 +336,50 @@ m11-audit: m11-freestanding
 >grep -q "m11_elf64_plan_load" $(M11_BUILD)/m11_objdump.txt
 
 m11-all: m11-host-test m11-audit
+# =========================
+# M14 Block Layer
+# =========================
+
+M14_BUILD := build/m14
+
+M14_SRC := kernel/block/block.c \
+           kernel/block/ramblk.c \
+           kernel/block/bcache.c
+
+M14_OBJ := $(M14_BUILD)/block.o \
+           $(M14_BUILD)/ramblk.o \
+           $(M14_BUILD)/bcache.o
+
+m14-host-test: $(M14_BUILD)/test_m14_block
+>./$(M14_BUILD)/test_m14_block
+
+$(M14_BUILD)/test_m14_block: tests/host/test_m14_block.c $(M14_SRC) include/mcsos/block.h
+>mkdir -p $(M14_BUILD)
+>$(HOSTCC) -std=c17 -Wall -Wextra -Werror -Iinclude \
+>tests/host/test_m14_block.c $(M14_SRC) \
+>-o $@
+
+m14-freestanding: $(M14_OBJ)
+
+$(M14_BUILD)/%.o: kernel/block/%.c include/mcsos/block.h
+>mkdir -p $(M14_BUILD)
+>$(CC) \
+>--target=x86_64-unknown-none-elf \
+>-std=c17 \
+>-ffreestanding \
+>-fno-builtin \
+>-fno-stack-protector \
+>-fno-pic \
+>-mno-red-zone \
+>-Wall -Wextra -Werror \
+>-Iinclude \
+>-c $< -o $@
+
+m14-audit: m14-freestanding
+>ld.lld -r -o $(M14_BUILD)/m14_block_layer.o $(M14_OBJ)
+>nm -u $(M14_BUILD)/m14_block_layer.o > $(M14_BUILD)/m14_nm_undefined.txt
+>test ! -s $(M14_BUILD)/m14_nm_undefined.txt
+>readelf -h $(M14_BUILD)/m14_block_layer.o > $(M14_BUILD)/m14_readelf.txt
+>objdump -dr $(M14_BUILD)/m14_block_layer.o > $(M14_BUILD)/m14_objdump.txt
+
+m14-all: m14-host-test m14-audit
